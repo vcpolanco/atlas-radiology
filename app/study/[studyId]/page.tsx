@@ -2,19 +2,22 @@
 
 import React, { useEffect, useMemo, useRef, useState } from 'react'
 
+type Annotation = { structureId: string; x: number; y: number }
+type AnnotationsBySlice = Record<number, Annotation[]>
+
 export default function Page() {
   const TOTAL_SLICES = 105
 
-  const viewerRef = useRef(null)
-  const imgRef = useRef(null)
-  const fileInputRef = useRef(null)
+  const viewerRef = useRef<HTMLDivElement | null>(null)
+  const imgRef = useRef<HTMLImageElement | null>(null)
+  const fileInputRef = useRef<HTMLInputElement | null>(null)
 
   const [slice, setSlice] = useState(50)
   const [labelsOn, setLabelsOn] = useState(true)
   const [editMode, setEditMode] = useState(false)
 
   const [activeStructure, setActiveStructure] = useState('aorta') // aorta | vcI | porta
-  const [annotationsBySlice, setAnnotationsBySlice] = useState({})
+  const [annotationsBySlice, setAnnotationsBySlice] = useState<AnnotationsBySlice>({})
   const [lastLoadedFile, setLastLoadedFile] = useState('')
 
   const imageUrl = useMemo(() => {
@@ -24,7 +27,7 @@ export default function Page() {
   const annotations = annotationsBySlice[slice] || []
 
   useEffect(() => {
-    const preload = (idx) => {
+    const preload = (idx: number) => {
       if (idx < 0 || idx >= TOTAL_SLICES) return
       const img = new Image()
       img.src = `/studies/abdomen_ct_normal_v1/slices/${String(idx).padStart(4, '0')}.jpg`
@@ -33,28 +36,28 @@ export default function Page() {
     preload(slice + 1)
   }, [slice])
 
-  function onWheel(e) {
+  function onWheel(e: React.WheelEvent<HTMLDivElement>) {
     e.preventDefault()
     setSlice((prev) =>
       Math.min(TOTAL_SLICES - 1, Math.max(0, prev + (e.deltaY > 0 ? 1 : -1)))
     )
   }
 
-  function structureLabel(id) {
+  function structureLabel(id: string) {
     if (id === 'aorta') return 'Aorta'
     if (id === 'vcI') return 'VCI'
     if (id === 'porta') return 'Porta'
     return id
   }
 
-  function structureColor(id) {
+  function structureColor(id: string) {
     if (id === 'aorta') return '#7dd3fc'
     if (id === 'vcI') return '#ffd54a'
     if (id === 'porta') return '#f472b6'
     return '#bbb'
   }
 
-  function addPointAtClick(e) {
+  function addPointAtClick(e: React.MouseEvent<HTMLDivElement>) {
     if (!editMode) return
     const img = imgRef.current
     if (!img) return
@@ -73,7 +76,7 @@ export default function Page() {
     })
   }
 
-  function deleteAnnotationAt(sliceIndex, annIndex) {
+  function deleteAnnotationAt(sliceIndex: number, annIndex: number) {
     setAnnotationsBySlice((prev) => {
       const copy = { ...prev }
       const list = copy[sliceIndex] ? [...copy[sliceIndex]] : []
@@ -83,7 +86,7 @@ export default function Page() {
     })
   }
 
-  function downloadJson(data, filename) {
+  function downloadJson(data: unknown, filename: string) {
     const jsonStr = JSON.stringify(data, null, 2)
     const blob = new Blob([jsonStr], { type: 'application/json' })
     const url = URL.createObjectURL(blob)
@@ -98,7 +101,7 @@ export default function Page() {
     URL.revokeObjectURL(url)
   }
 
-  function importAnnotationsFromFile(file) {
+  function importAnnotationsFromFile(file: File) {
     const reader = new FileReader()
 
     reader.onload = () => {
@@ -112,7 +115,7 @@ export default function Page() {
           return
         }
 
-        const normalized = {}
+        const normalized: AnnotationsBySlice = {}
         Object.keys(maybeAnnotations).forEach((k) => {
           const sliceIndex = Number(k)
           if (Number.isNaN(sliceIndex)) return
