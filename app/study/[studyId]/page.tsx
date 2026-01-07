@@ -8,6 +8,14 @@ type AnnotationsBySlice = Record<number, Annotation[]>
 export default function Page() {
   const TOTAL_SLICES = 105
 
+  const [isMobile, setIsMobile] = useState(false)
+  useEffect(() => {
+    const mq = window.matchMedia('(max-widht: 900px)')
+    const update = () => setIsMobile(mq.matches)
+    update()
+    mq.addEventListener('change',update)
+  },[])
+
   const viewerRef = useRef<HTMLDivElement | null>(null)
   const imgRef = useRef<HTMLImageElement | null>(null)
   const fileInputRef = useRef<HTMLInputElement | null>(null)
@@ -145,7 +153,12 @@ export default function Page() {
   }
 
   return (
-    <div style={{ height: '100dvh', display: 'flex', background: '#111', overflow: 'hidden' }}>
+    <div style={{ 
+      height: '100dvh', 
+      display: 'flex', 
+      flexDirectio: isMobile? 'column' : 'row', 
+      background: '#111', 
+      overflow: 'hidden' }}>
       {/* VISOR */}
       <div
         ref={viewerRef}
@@ -255,12 +268,14 @@ export default function Page() {
       {/* PANEL DERECHO */}
       <div
         style={{
-          width: 360,
+          width: isMobile ? '100%' : 360,
+          height: isMobile ? '42dvh' : '100%',
           background: '#0b0b0b',
           color: 'white',
           padding: 16,
           overflowY: 'auto',
-          borderLeft: '1px solid #222'
+          borderLeft: isMobile ? 'none' : '1px solid #222',
+          borderTop: isMobile ? '1px solid #222' : 'none'
         }}
       >
         <div style={{ fontSize: 18, fontWeight: 700 }}>Editor</div>
