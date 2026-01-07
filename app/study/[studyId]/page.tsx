@@ -24,6 +24,9 @@ export default function Page() {
   const [labelsOn, setLabelsOn] = useState(true)
   const [editMode, setEditMode] = useState(false)
 
+  const touchStartYRef = useRef<number | null>(null)
+  const touchLastTriggerYRef = useRef<number | null>(null)
+
   const [activeStructure, setActiveStructure] = useState('aorta') // aorta | vcI | porta
   const [annotationsBySlice, setAnnotationsBySlice] = useState<AnnotationsBySlice>({})
   const [lastLoadedFile, setLastLoadedFile] = useState('')
@@ -152,11 +155,58 @@ export default function Page() {
     reader.readAsText(file)
   }
 
+  function clampSlice(n: number) {
+  return Math.min(TOTAL_SLICES - 1, Math.max(0, n))
+}
+
+function stepSlice(delta: number) {
+  setSlice((prev) => clampSlice(prev + delta))
+}
+
+function onTouchStartViewer(e: React.TouchEvent<HTMLDivElement>) {
+  const y = e.touches[0]?.clientY
+  if (typeof y !== 'number') return
+  touchStartYRef.current = y
+  touchLastTriggerYRef.current = y
+}
+
+function onTouchMoveViewer(e: React.TouchEvent<HTMLDivElement>) {
+  // Importante: evitamos que la página haga scroll mientras swipeás el visor
+  e.preventDefault()
+
+  const y = e.touches[0]?.clientY
+  if (typeof y !== 'number') return
+  if (touchStartYRef.current === null) return
+  if (touchLastTriggerYRef.current === null) touchLastTriggerYRef.current = y
+
+  const last = touchLastTriggerYRef.current
+  const dy = y - last
+
+  // Umbral en píxeles: cada 18px de swipe cambia 1 corte (ajustable)
+  const STEP_PX = 18
+
+  if (dy <= -STEP_PX) {
+    // dedo sube → avanzar cortes
+    stepSlice(+1)
+    touchLastTriggerYRef.current = y
+  } else if (dy >= STEP_PX) {
+    // dedo baja → retroceder cortes
+    stepSlice(-1)
+    touchLastTriggerYRef.current = y
+  }
+}
+
+function onTouchEndViewer() {
+  touchStartYRef.current = null
+  touchLastTriggerYRef.current = null
+}
+
+
   return (
     <div style={{ 
       height: '100dvh', 
       display: 'flex', 
-      flexDirectio: isMobile? 'column' : 'row', 
+      flexDirection: isMobile ? 'column' : 'row', 
       background: '#111', 
       overflow: 'hidden' }}>
       {/* VISOR */}
@@ -164,13 +214,17 @@ export default function Page() {
         ref={viewerRef}
         onWheel={onWheel}
         onClick={addPointAtClick}
-        style={{
+        onTouchStart={onTouchStartViewer}
+        onTouchMove={onTouchMoveViewer}
+        onTouchEnd={onTouchEndViewer}
+          style={{
           flex: 1,
           position: 'relative',
           overflow: 'hidden',
           display: 'flex',
           justifyContent: 'center',
-          alignItems: 'center'
+          alignItems: 'center',
+          touchAction: 'none' // clave para que el swipe no haga scroll del navegador
         }}
       >
         <img
