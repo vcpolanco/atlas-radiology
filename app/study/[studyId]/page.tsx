@@ -222,6 +222,7 @@ function onTouchEndViewer() {
           style={{
           flex: 1,
           minHeight: 0,
+          width: '100%'
           position: 'relative',
           overflow: 'hidden',
           display: 'flex',
