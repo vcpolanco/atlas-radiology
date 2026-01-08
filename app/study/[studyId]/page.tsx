@@ -204,11 +204,13 @@ function onTouchEndViewer() {
 
   return (
     <div style={{ 
-      height: '100dvh', 
+      height: '100vh', 
       display: 'flex', 
       flexDirection: isMobile ? 'column' : 'row', 
       background: '#111', 
-      overflow: 'hidden' }}>
+      overflow: 'hidden',
+      minHeight: 0
+      }}>
       {/* VISOR */}
       <div
         ref={viewerRef}
@@ -219,6 +221,7 @@ function onTouchEndViewer() {
         onTouchEnd={onTouchEndViewer}
           style={{
           flex: 1,
+          minHeight: 0,
           position: 'relative',
           overflow: 'hidden',
           display: 'flex',
@@ -232,7 +235,11 @@ function onTouchEndViewer() {
           src={imageUrl}
           alt="TC Abdomen"
           draggable={false}
-          style={{ maxHeight: '96vh', maxWidth: '100%' }}
+          style={{ 
+            width: '100%', 
+            height: '100%',
+            objectFit: 'contain'
+          }}
         />
 
         <div style={{ position: 'absolute', top: 10, left: 10, color: 'white' }}>
@@ -323,7 +330,8 @@ function onTouchEndViewer() {
       <div
         style={{
           width: isMobile ? '100%' : 360,
-          height: isMobile ? '42dvh' : '100%',
+          height: isMobile ? '42vh' : '100%',
+          minHeight: 0,
           background: '#0b0b0b',
           color: 'white',
           padding: 16,
