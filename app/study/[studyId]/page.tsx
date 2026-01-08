@@ -203,14 +203,7 @@ function onTouchEndViewer() {
 
 
   return (
-    <div style={{ 
-      height: '100vh', 
-      display: 'flex', 
-      flexDirection: isMobile ? 'column' : 'row', 
-      background: '#111', 
-      overflow: 'hidden',
-      minHeight: 0
-      }}>
+    <div className="appRoot">
       {/* VISOR */}
       <div
         ref={viewerRef}
@@ -219,28 +212,14 @@ function onTouchEndViewer() {
         onTouchStart={onTouchStartViewer}
         onTouchMove={onTouchMoveViewer}
         onTouchEnd={onTouchEndViewer}
-          style={{
-          flex: 1,
-          minHeight: 0,
-          width: '100%'
-          position: 'relative',
-          overflow: 'hidden',
-          display: 'flex',
-          justifyContent: 'center',
-          alignItems: 'center',
-          touchAction: 'none' // clave para que el swipe no haga scroll del navegador
-        }}
+        className="viewer"
       >
         <img
           ref={imgRef}
           src={imageUrl}
           alt="TC Abdomen"
           draggable={false}
-          style={{ 
-            width: '100%', 
-            height: '100%',
-            objectFit: 'contain'
-          }}
+          className="viewerImg"
         />
 
         <div style={{ position: 'absolute', top: 10, left: 10, color: 'white' }}>
@@ -328,19 +307,8 @@ function onTouchEndViewer() {
       </div>
 
       {/* PANEL DERECHO */}
-      <div
-        style={{
-          width: isMobile ? '100%' : 360,
-          height: isMobile ? '42vh' : '100%',
-          minHeight: 0,
-          background: '#0b0b0b',
-          color: 'white',
-          padding: 16,
-          overflowY: 'auto',
-          borderLeft: isMobile ? 'none' : '1px solid #222',
-          borderTop: isMobile ? '1px solid #222' : 'none'
-        }}
-      >
+      <div className="panel">
+
         <div style={{ fontSize: 18, fontWeight: 700 }}>Editor</div>
 
         <div style={{ marginTop: 8, color: '#aaa', fontSize: 13, lineHeight: 1.4 }}>
@@ -456,6 +424,61 @@ function onTouchEndViewer() {
           }}
         />
       </div>
+    
+    <style jsx>{`
+      .appRoot {
+      height: 100vh;
+      display: flex;
+      flex-direction: row;
+      background: #111;
+      overflow: hidden;
+      min-height: 0;
+    }
+
+     .viewer {
+      flex: 1;
+      min-width: 0;
+      min-height: 0;
+      width: 100%;
+      position: relative;
+      overflow: hidden;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      touch-action: none;
+     }
+
+     .viewerImg {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+    }
+
+    .panel {
+      width: 360px;
+     background: #0b0b0b;
+     color: white;
+     padding: 16px;
+     overflow-y: auto;
+     border-left: 1px solid #222;
+      min-height: 0;
+    }
+
+    /* MOBILE */
+    @media (max-width: 900px) {
+     .appRoot {
+      flex-direction: column;
+    }
+
+    .panel {
+      width: 100%;
+      height: 42vh;
+      border-left: none;
+      border-top: 1px solid #222;
+    }
+  }
+`}</style>
+
     </div>
   )
 }
