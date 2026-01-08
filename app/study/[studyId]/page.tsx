@@ -282,7 +282,6 @@ function onTouchEndViewer() {
             return (
               <div
                 key={idx}
-                title={`${structureLabel(a.structureId)} (click derecho para borrar)`}
                 onClick={(e) => e.stopPropagation()}
                 onContextMenu={(e) => {
                   e.preventDefault()
@@ -294,14 +293,35 @@ function onTouchEndViewer() {
                   left: pxLeft,
                   top: pxTop,
                   transform: 'translate(-50%, -50%)',
-                  width: 10,
-                  height: 10,
-                  borderRadius: 999,
-                  background: structureColor(a.structureId),
-                  boxShadow: '0 0 0 3px rgba(0,0,0,0.6)',
-                  cursor: 'pointer'
+                  pointerEvents: 'auto'
                 }}
-              />
+                >
+                  {/* PUNTO */}
+              <div
+               style={{
+               width: 10,
+               height: 10,
+               borderRadius: 999,
+               background: structureColor(a.structureId),
+               boxShadow: '0 0 0 3px rgba(0,0,0,0.6)'
+             }}
+             />
+             {/* LABEL */}
+              <div
+               style={{
+               marginTop: 6,
+                padding: '2px 6px',
+               background: 'rgba(0,0,0,0.7)',
+               color: 'white',
+               fontSize: 12,
+               borderRadius: 6,
+               whiteSpace: 'nowrap',
+               pointerEvents: 'none' // clave: no interfiere con clicks
+             }}
+            >
+             {structureLabel(a.structureId)}
+            </div>
+           </div>
             )
           })}
       </div>
