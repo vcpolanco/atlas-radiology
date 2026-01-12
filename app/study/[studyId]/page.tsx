@@ -1,26 +1,38 @@
 'use client'
 
 import React, { useEffect, useMemo, useRef, useState } from 'react'
+import { useParams } from "next/navigation"
+
+import { getStudyById } from "@/lib/atlas/studies"
+import { buildSliceUrl } from "@/lib/atlas/loader"
 
 type Annotation = { structureId: string; x: number; y: number }
 type AnnotationsBySlice = Record<number, Annotation[]>
 
 export default function Page() {
-  const TOTAL_SLICES = 105
+  const { studyId } = useParams<{ studyId: string }>()
+  const study = useMemo(() => getStudyById(studyId), [studyId])
 
-  const [isMobile, setIsMobile] = useState(false)
-  useEffect(() => {
-    const mq = window.matchMedia('(max-widht: 900px)')
+  const TOTAL_SLICES = study?.slicesCount ?? 0
+
+  if (!study) return <div style={{ padding:16}}>Estudio no encontrado: {studyId}</div>
+
+    const [isMobile, setIsMobile] = useState(false)
+  
+    useEffect(() => {
+    const mq = window.matchMedia("(max-width: 900px)")
     const update = () => setIsMobile(mq.matches)
     update()
     mq.addEventListener('change',update)
+    return () => mq.removeEventListener("change", update)
   },[])
 
   const viewerRef = useRef<HTMLDivElement | null>(null)
   const imgRef = useRef<HTMLImageElement | null>(null)
   const fileInputRef = useRef<HTMLInputElement | null>(null)
+  const preloadedRef = useRef<Set<string>>(new Set())
 
-  const [slice, setSlice] = useState(50)
+  const [slice, setSlice] = useState(0)
   const [labelsOn, setLabelsOn] = useState(true)
   const [editMode, setEditMode] = useState(false)
 
@@ -32,26 +44,46 @@ export default function Page() {
   const [lastLoadedFile, setLastLoadedFile] = useState('')
 
   const imageUrl = useMemo(() => {
-    return `/studies/abdomen_ct_normal_v1/slices/${String(slice).padStart(4, '0')}.jpg`
-  }, [slice])
+    if (!study) return ""
+    return buildSliceUrl(study, slice)
+  }, [study, slice])
 
   const annotations = annotationsBySlice[slice] || []
 
   useEffect(() => {
-    const preload = (idx: number) => {
-      if (idx < 0 || idx >= TOTAL_SLICES) return
-      const img = new Image()
-      img.src = `/studies/abdomen_ct_normal_v1/slices/${String(idx).padStart(4, '0')}.jpg`
-    }
-    preload(slice - 1)
-    preload(slice + 1)
-  }, [slice])
+   if (!study) return
+   if (TOTAL_SLICES <= 0) return
+
+   const RANGE = 3 // precarga slice actual ±3
+   const urls: string[] = []
+
+   for (let i = slice - RANGE; i <= slice + RANGE; i++) {
+   if (i < 0 || i >= study.slicesCount) continue
+    urls.push(buildSliceUrl(study, i))
+  }
+
+  for (const url of urls) {
+    if (preloadedRef.current.has(url)) continue
+    preloadedRef.current.add(url)
+    const img = new Image()
+    img.src = url
+  }
+}, [study, slice, TOTAL_SLICES])
+
 
   function onWheel(e: React.WheelEvent<HTMLDivElement>) {
+     // Si querés bloquear scroll de la página mientras estás sobre el visor:
     e.preventDefault()
-    setSlice((prev) =>
-      Math.min(TOTAL_SLICES - 1, Math.max(0, prev + (e.deltaY > 0 ? 1 : -1)))
-    )
+    
+    const total = study?.slicesCount ?? 0
+    if (total <= 0) return
+
+    const dir = e.deltaY > 0 ? 1 : -1
+
+    setSlice((prev) => {
+      const next = prev + dir 
+      return Math.min(total - 1, Math.max(0, next))
+    })
   }
 
   function structureLabel(id: string) {
@@ -201,7 +233,7 @@ function onTouchEndViewer() {
   touchLastTriggerYRef.current = null
 }
 
-
+// ********** RETURN PRINCIPAL  ******* //
   return (
     <div className="appRoot">
       {/* VISOR */}
@@ -225,6 +257,57 @@ function onTouchEndViewer() {
         <div style={{ position: 'absolute', top: 10, left: 10, color: 'white' }}>
           Corte {slice + 1} / {TOTAL_SLICES}
         </div>
+        
+        <button 
+        // BOTON DE DESLIZAMIENTO DE IMAGEN NEXT/PREV // 
+          onClick={(e) => {
+            e.stopPropagation()
+            setSlice((prev) => Math.max(0, prev - 1))
+          }}
+  
+           disabled={slice <= 0}
+          style={{
+            position: 'fixed',
+            bottom: 20,
+            left: 20,
+            zIndex: 9999,
+            background: slice <= 0 ? '#333' : '#2563eb',
+            color: 'white',
+            border: 'none',
+            padding: '10px 14px',
+            borderRadius: 10,
+            cursor: slice <= 0 ? 'not-allowed' : 'pointer',
+            opacity: slice <= 0 ? 0.5 : 1
+            }}
+          >
+         ◀ Prev
+          </button>
+
+          <button
+            onClick={(e) => {
+            e.stopPropagation()
+            setSlice((prev) =>
+            Math.min(TOTAL_SLICES - 1, prev + 1)
+          )
+          }}
+          disabled={slice >= TOTAL_SLICES - 1}
+            style={{
+            position: 'fixed',
+            bottom: 20,
+            left: 110,
+            zIndex: 9999,
+            background: slice >= TOTAL_SLICES - 1 ? '#333' : '#2563eb',
+            color: 'white',
+            border: 'none',
+            padding: '10px 14px',
+            borderRadius: 10,
+            cursor: slice >= TOTAL_SLICES - 1 ? 'not-allowed' : 'pointer',
+            opacity: slice >= TOTAL_SLICES - 1 ? 0.5 : 1
+            }}
+          >
+          Next ▶
+        </button>
+
 
         <button
           onClick={(e) => {

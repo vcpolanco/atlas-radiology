@@ -28,7 +28,16 @@ function NavLink({ href, label }: { href: string; label: string }) {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="es">
-      <body style={{ margin: 0, fontFamily: "system-ui, -apple-system, Segoe UI, Roboto, Arial" }}>
+      <body
+        style={{
+          margin: 0,
+          fontFamily: "system-ui, -apple-system, Segoe UI, Roboto, Arial",
+          height: "100vh",
+          overflow: "hidden",
+          display: "grid",
+          gridTemplateRows: "auto 1fr",
+        }}
+      >
         {/* Header */}
         <header
           style={{
@@ -52,11 +61,15 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             }}
           >
             <Link href="/" style={{ textDecoration: "none", color: "inherit" }}>
-              <div style={{ fontWeight: 800, letterSpacing: 0.2 }}>Proyectos Web</div>
-              <div style={{ fontSize: 12, opacity: 0.7, marginTop: 2 }}>Atlas • Casos RX</div>
+              <div style={{ fontWeight: 800, letterSpacing: 0.2 }}>
+                Proyectos Web
+              </div>
+              <div style={{ fontSize: 12, opacity: 0.7, marginTop: 2 }}>
+                Atlas • Casos RX
+              </div>
             </Link>
 
-            <nav style={{ display: "flex", gap: 8, flexWrap: "wrap", justifyContent: "flex-end" }}>
+            <nav style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
               <NavLink href="/" label="Inicio" />
               <NavLink href="/atlas" label="Atlas" />
               <NavLink href="/casos-rx" label="Casos RX" />
@@ -64,8 +77,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           </div>
         </header>
 
-        {/* Content */}
-        <div style={{ maxWidth: 1100, margin: "0 auto", padding: "16px" }}>{children}</div>
+        {/* Content (full height, sin padding global) */}
+        <div style={{ overflow: "hidden", minHeight: 0 }}>
+          {children}
+        </div>
       </body>
     </html>
   )

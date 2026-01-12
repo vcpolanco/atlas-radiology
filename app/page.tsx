@@ -29,7 +29,7 @@ function CardLink({
 
 export default function HomePage() {
   return (
-    <main style={{ paddingTop: 8 }}>
+    <main style={{ padding: 16 }}>
       <h1 style={{ fontSize: 30, margin: "8px 0 6px" }}>Panel principal</h1>
       <p style={{ opacity: 0.8, margin: "0 0 18px" }}>
         Elegí un módulo para empezar.

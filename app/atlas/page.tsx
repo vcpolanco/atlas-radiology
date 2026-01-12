@@ -8,7 +8,7 @@ export default function AtlasPage() {
   ]
 
   return (
-    <main>
+    <main style={{ maxWidth: 1100, margin: "0 auto", padding: 16 }}>
       <h1 style={{ fontSize: 26, margin: "8px 0 12px" }}>Atlas</h1>
 
       <div style={{ display: "grid", gap: 12, maxWidth: 780 }}>
