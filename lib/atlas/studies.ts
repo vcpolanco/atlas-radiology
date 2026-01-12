@@ -11,6 +11,16 @@ export const STUDIES: Study[] = [
     structures: [],
     annotationsBySlice: {},
   },
+  {
+    id: "abdomen_ct_normal_v1",
+    title: "TC Abdomen Normal (v1)",
+    basePath: "/studies/abdomen_ct_normal_v1",
+    slicesCount: 105,
+    slicesExt: "jpg",
+    sliceName: { prefix: "slice", pad: 3 }, // sufijo 001, padding es 3 numeros
+    structures: [],
+    annotationsBySlice: {},
+  },
 ]
 
 export function getStudyById(id: string) {

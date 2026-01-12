@@ -6,8 +6,9 @@ export function pad(n: number, len: number) {
 
 export function buildSliceUrl(study: Study, sliceIndex: number) {
   const n = sliceIndex + 1
-  return `${study.basePath}/${study.sliceName.prefix}${pad(
-    n,
-    study.sliceName.pad
-  )}.${study.slicesExt}`
+
+  const prefix = study.sliceName.prefix ?? ""
+  const name = prefix ? `${prefix}${pad(n, study.sliceName.pad)}` : `${pad(n, study.sliceName.pad)}`
+
+  return `${study.basePath}/${name}.${study.slicesExt}`
 }
