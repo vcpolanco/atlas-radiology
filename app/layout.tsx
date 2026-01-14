@@ -34,8 +34,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           fontFamily: "system-ui, -apple-system, Segoe UI, Roboto, Arial",
           height: "100vh",
           overflow: "hidden",
-          display: "grid",
-          gridTemplateRows: "auto 1fr",
+          display: "flex",
+          flexDirection: "column"
         }}
       >
         {/* Header */}
@@ -77,10 +77,17 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           </div>
         </header>
 
-        {/* Content (full height, sin padding global) */}
-        <div style={{ overflow: "hidden", minHeight: 0 }}>
+        {/* Content */}
+          <div
+          style={{
+          flex: 1,
+          minHeight: 0,          // clave: permite que los hijos hagan overflow interno
+          overflow: "hidden",    // evita scroll de la página
+          }}
+          >
           {children}
         </div>
+
       </body>
     </html>
   )
