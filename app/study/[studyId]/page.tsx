@@ -8,6 +8,9 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { useParams } from "next/navigation"
 
+// habilitar author mode con query param
+import { useSearchParams } from "next/navigation"
+
 import { getStudyById } from "@/lib/atlas/studies"
 import { buildSliceUrl } from "@/lib/atlas/loader"
 // END SECTION :: [1] IMPORTS
@@ -86,6 +89,18 @@ export default function Page() {
 
 
   // =====================================================
+  // [3.x] MODE :: Author (enable editing for yourself)
+  // MODO :: Autor (habilita edición solo para vos - PARA QUERY PARAM
+  // Where: Page() -> after useParams()
+  // =====================================================
+  const searchParams = useSearchParams()
+  
+  // END SECTION :: MODE :: Author
+  // Fin sección :: Modo :: Autor
+
+
+
+  // =====================================================
   // [3.2] STATE :: RESPONSIVE FLAGS
   // State :: responsive flags (mobile/desktop)
   // Estado :: flags responsive (móvil/escritorio)
@@ -125,9 +140,7 @@ export default function Page() {
   const [slice, setSlice] = useState(0)
   const [labelsOn, setLabelsOn] = useState(true)
 
-  // NOTE (EN): editMode will be removed for read-only atlas
-  // NOTA (ES): editMode se eliminará para atlas solo-lectura
-  const [editMode, setEditMode] = useState(false)
+   
   // END SECTION :: [3.4] STATE :: VIEWER NAVIGATION + UI
   // Fin sección :: [3.4] State navigation + UI
 
@@ -465,37 +478,56 @@ export default function Page() {
   // Handler :: adds a point on click (only when editMode=true)
   // Manejador :: agrega un punto al click (solo si editMode=true)
   // =====================================================
-  // handler: addPointAtClick -> converts click to image-relative coords [0..1]
-  // manejador: addPointAtClick -> convierte click a coords relativas [0..1]
-
+  // =====================================================
+  // handler: addPointAtClick     CLICK PARA AUTOR
+  // handler: adds/updates point on image (AUTHOR ONLY)
+  // handler: agrega/actualiza punto en imagen (SOLO AUTOR)
+  // Where: viewer onClick={addPointAtClick}
+  // =====================================================
   function addPointAtClick(e: React.MouseEvent<HTMLDivElement>) {
-    // NOTE (EN): read-only atlas -> this will be disabled (no user edits)
-    // NOTA (ES): atlas solo lectura -> esto se desactiva (sin edición de usuario)
-    if (!editMode) return
+    if (!isAuthor) return // read-only for normal users / solo lectura para usuarios
 
     const viewer = viewerRef.current
     const img = imgRef.current
     if (!viewer || !img) return
 
-    const vRect = viewer.getBoundingClientRect()
     const iRect = img.getBoundingClientRect()
 
-    // coords relative to IMAGE rect, not viewer
-    // coordenadas relativas al rect de la IMAGEN, no del viewer
     const relX = (e.clientX - iRect.left) / iRect.width
     const relY = (e.clientY - iRect.top) / iRect.height
 
-    // guard: ignore clicks outside the image (black margins)
-    // guard: ignorar clicks fuera de la imagen (margen negro)
+    // ignore clicks outside the actual image (black margins)
+    // ignorar clicks fuera de la imagen (margen negro)
     if (relX < 0 || relX > 1 || relY < 0 || relY > 1) return
 
-    const newAnn: Annotation = { structureId: activeStructure, x: relX, y: relY }
+    const ann: Annotation = { structureId: activeStructure, x: relX, y: relY }
 
+    upsertAnnotationAtSlice(slice, ann)
+  }
+  // END SECTION :: handler: addPointAtClick
+  // Fin sección :: handler: addPointAtClick
+
+
+  // =====================================================
+  // fx: upsertAnnotationAtSlice PARA ANOTAR DONDE VA EL LABEL
+  // function: set/replace one point for a given structureId at current slice
+  // función: setea/reemplaza un punto para un structureId en el corte actual
+  // =====================================================
+  function upsertAnnotationAtSlice(sliceIndex: number, ann: Annotation) {
     setAnnotationsBySlice((prev) => {
-      const current = prev[slice] ?? []
-      return { ...prev, [slice]: [...current, newAnn] }
+      const current = prev[sliceIndex] ?? []
+
+      // remove previous point for the same structureId (1 point per structure per slice)
+      // eliminar punto previo del mismo structureId (1 punto por estructura por corte)
+      const withoutSame = current.filter((a) => a.structureId !== ann.structureId)
+
+      return { ...prev, [sliceIndex]: [...withoutSame, ann] }
     })
   }
+  // END SECTION :: fx: upsertAnnotationAtSlice MODO AUTOR PARA SETEAR LABEL AL CORTE
+  // Fin sección :: fx: upsertAnnotationAtSlice
+
+
   // END SECTION :: [3.20] HANDLER :: ADD ANNOTATION POINT (EDIT MODE)
   // Fin sección :: [3.20] Handler addPointAtClick
 
@@ -603,6 +635,24 @@ export default function Page() {
   // END SECTION :: [3.11] fx :: CALLOUT LAYOUT MANAGER
   // Fin sección :: [3.11] fx layoutCallouts
 
+
+  // == MODO AUTOR VISIBLE========================================
+  // MEMO :: AUTHOR MODE (query flag)
+  // MEMO :: MODO AUTOR (flag en query)
+  // Purpose (EN): enable point editing only with ?author=1
+  // Propósito (ES): habilitar edición solo con ?author=1
+  // =====================================================
+  const isAuthor = useMemo(() => {
+    if (typeof window === "undefined") return false
+    const sp = new URLSearchParams(window.location.search)
+    return sp.get("author") === "1"
+  }, [])
+  // END SECTION :: MEMO :: AUTHOR MODE
+  // Fin sección :: Memo :: Modo autor
+
+
+
+
   // =====================================================
   // [3.12] MEMO :: CALLOUTS (COMPUTE + LAYOUT)
   // Memo :: callouts computed in px and laid out (no label overlap)
@@ -624,11 +674,26 @@ export default function Page() {
     // build items from annotations (slice-local list)
     // construir items desde annotations (lista del corte)
     const items: CalloutItem[] = annotations.map((a, idx) => {
-      const label =
-        study.structures.find((s) => s.id === a.structureId)?.label ?? a.structureId
+      
+      
+      // fx: formatStructureLabel
+      // function: adds (L/R/M) tag when available
+      // función: agrega etiqueta (I/D/M) si está disponible
+      const s = study.structures.find((it) => it.id === a.structureId)
 
+      const sideTag =
+        s?.side === "L" ? " (L)" :
+        s?.side === "R" ? " (R)" :
+        s?.side === "M" ? " (M)" :
+        ""
+
+      const label = (s?.label ?? a.structureId) + sideTag
+      // END fx: formatStructureLabel
+      // Fin función: formatStructureLabel
+
+      //--------------------------------------------------------------//
       // point in px relative to viewer (important: use imageRect within viewer)
-      // punto en px relativo al viewer (clave: usar rect de imagen dentro del viewer)
+      // punto en px relativo al viewer (clave: usar rect de imagen dentro del viewer)  
       const px = (geom.i.left - geom.v.left) + a.x * geom.i.width
       const py = (geom.i.top - geom.v.top) + a.y * geom.i.height
 
@@ -650,10 +715,14 @@ export default function Page() {
     // assign endX for each side (outside image margin)
     // asignar endX por lado (afuera del margen de imagen)
     return placed.map((p) => {
-      const endX = p.isLeft
-        ? Math.max(10, (geom.i.left - geom.v.left) - 18)
-        : Math.min(geom.v.width - 10, (geom.i.right - geom.v.left) + 18)
-
+      // constants: label columns inside viewer
+      // constantes: columnas de etiquetas dentro del visor
+        const COL_PAD = 12
+        
+        const endX = p.isLeft
+        ? COL_PAD
+        : Math.max(COL_PAD, geom.v.width - COL_PAD)
+        
       // endY already computed by layoutCallouts
       // endY ya viene calculado por layoutCallouts
       return { ...p, endX, endY: p.endY }
@@ -674,18 +743,64 @@ export default function Page() {
 // =====================================================
 return (
   <div className="appRoot">
+
+     {/* ============================================= */}
+     {/* SECTION :: SIDE PANEL (navigation / author)   */}
+     {/* Sección :: Panel lateral (navegación / autor) */}
+     {/* ============================================= */}
+     <div className="sidePanel">
+      {/* Author mode / Cortes clave */}
+      {/* ===================================================== */}
+
+        {/* SECTION :: KEY SLICES (Side Panel)                    */}
+        {/* Sección :: Cortes clave (Panel lateral)               */}
+        {/* Where: page.tsx -> return() -> <div className="sidePanel"> */}
+        {/* ===================================================== */}
+
+        <div className="keySlicesList">
+          {study.keySlices?.map((k) => (
+            <button
+              key={`slice-${k.idx}`}
+              onClick={() => setSlice(k.idx)}
+              className={`sidePanelItem ${k.idx === slice ? "active" : ""}`}
+            >
+              <div className="sidePanelItemTitle">
+                {k.label}
+              </div>
+
+              <div className="sidePanelItemSub">
+                Corte {k.idx + 1}
+              </div>
+            </button>
+          ))}
+        </div>
+
+        {/* END SECTION :: KEY SLICES (Side Panel) */}
+        {/* Fin sección :: Cortes clave (Panel lateral) */}
+
+      </div>
+     {/* END SECTION :: SIDE PANEL */}
+
+
     {/* ===================================================== */}
     {/* [3.13.1] SECTION :: VIEWER                             */}
     {/* Sección :: Visor principal                             */}
     {/* Where: return() root -> first child                    */}
     {/* Dónde: raíz del return() -> primer hijo                */}
     {/* ===================================================== */}
-    <div ref={viewerRef} onWheel={onWheel} className="viewer">
+
+    <div 
+      ref={viewerRef} 
+      onWheel={onWheel} 
+      onClick={isAuthor ? addPointAtClick : undefined}
+      className="viewer">
+    
       {/* ----------------------------------------------------- */}
       {/* [3.13.1.1] SECTION :: IMAGE (slice)                    */}
       {/* Sección :: Imagen (corte)                             */}
       {/* Where: inside viewer, first child                     */}
       {/* Dónde: dentro del viewer, primer hijo                 */}
+       
       {/* ----------------------------------------------------- */}
       <img ref={imgRef} src={imageUrl} alt="CT" draggable={false} className="viewerImg" />
       {/* END SECTION :: [3.13.1.1] IMAGE (slice) */}
@@ -765,8 +880,8 @@ return (
           {/* ----------------------------------------------------- */}
           {/* [3.13.1.2.3] LABELS :: external labels                */}
           {/* Etiquetas :: externas                                 */}
-          {/* Note (EN): uses endY from layoutCallouts (no overlap)  */}
-          {/* Nota (ES): usa endY ordenado (sin solapes)            */}
+          {/* EN: external labels pinned to left/right columns       */}
+          {/* ES: etiquetas externas fijadas a columnas izq/der      */}
           {/* ----------------------------------------------------- */}
           {labelsOn &&
             callouts.map((c) => (
@@ -774,14 +889,12 @@ return (
                 key={`lb-${c.idx}`}
                 style={{
                   position: "absolute",
-                  left: c.endX,
                   top: c.endY,
-                  transform: c.isLeft ? "translate(-100%, -50%)" : "translate(0%, -50%)",
                   zIndex: 9000,
                   pointerEvents: "none",
-                  background: "rgba(0,0,0,0.65)",
+                  background: "rgba(0, 0, 0, 0.90)",
                   color: "white",
-                  fontSize: 12,
+                  fontSize: 14,
                   padding: "6px 8px",
                   borderRadius: 10,
                   border: "1px solid rgba(255,255,255,0.15)",
@@ -789,6 +902,17 @@ return (
                   maxWidth: 260,
                   overflow: "hidden",
                   textOverflow: "ellipsis",
+
+                  // anchor inside viewer:
+                  // ancla dentro del visor:
+                  left: c.isLeft ? c.endX : undefined,
+                  right: c.isLeft ? undefined : 12,
+
+                  // align text:
+                  // alinear texto:
+                  transform: "translate(0, -50%)",
+                  textAlign: c.isLeft ? "left" : "right",
+
                 }}
               >
                 {c.label}
@@ -886,59 +1010,100 @@ return (
         Etiquetas: {labelsOn ? "ON" : "OFF"}
       </button>
 
-      {/* PANEL :: Key slices (floating list) */}
-      {/* PANEL :: Cortes clave (lista flotante) */}
-      {study.keySlices && study.keySlices.length > 0 && (
+      {/* ----------------------------------------------------- */}
+
+      {/* ===================================================== */}
+      {/* SECTION :: AUTHOR TOOLS (only when isAuthor)          */}
+      {/* Sección :: Herramientas Autor (solo si isAuthor)      */}
+      {/* Where: return() -> inside viewer overlays             */}
+      {/* ===================================================== */}
+      {isAuthor && (
         <div
           style={{
             position: "absolute",
-            top: 96,
+            top: 52,
             left: 12,
             zIndex: 9999,
-            background: "rgba(0,0,0,0.6)",
-            backdropFilter: "blur(6px)",
+            background: "rgba(0,0,0,0.55)",
+            border: "1px solid rgba(255,255,255,0.12)",
             borderRadius: 12,
-            padding: 8,
-            display: "flex",
-            flexDirection: "column",
-            gap: 6,
-            maxHeight: "60vh",
-            overflowY: "auto",
+            padding: 10,
+            color: "white",
+            width: 280,
           }}
           onClick={(e) => e.stopPropagation()}
         >
-          <div style={{ color: "white", fontWeight: 700, fontSize: 12, opacity: 0.9 }}>
-            Cortes clave
+          
+          <div style={{ fontSize: 12, opacity: 0.9, marginBottom: 6 }}>
+            Active structure:
           </div>
 
-          {study.keySlices.map((k) => (
-            <button
-              key={k}
-              onClick={(e) => {
-                e.stopPropagation()
-                setSlice(k)
-              }}
-              style={{
-                textAlign: "left",
-                background: k === slice ? "#2563eb" : "rgba(255,255,255,0.1)",
-                color: "white",
-                border: "none",
-                padding: "6px 10px",
-                borderRadius: 8,
-                cursor: "pointer",
-                fontSize: 12,
-                opacity: k === slice ? 1 : 0.9,
-              }}
-            >
-              Corte {k + 1}
-            </button>
-          ))}
+          <select
+            value={activeStructure}
+            onChange={(e) => setActiveStructure(e.target.value)}
+            style={{
+              width: "100%",
+              padding: "8px 10px",
+              borderRadius: 10,
+              border: "1px solid rgba(255,255,255,0.18)",
+              background: "rgba(0,0,0,0.35)",
+              color: "white",
+              outline: "none",
+            }}
+          >
+            {study.structures.map((s) => (
+              <option key={s.id} value={s.id}>
+                {s.label}
+              </option>
+            ))}
+          </select>
+
+        
+
+          <div style={{ marginTop: 8, fontSize: 11, opacity: 0.75, lineHeight: 1.25 }}>
+            Tip: open with <b>?author=1</b>. Click on the image to set/replace the point for the
+            selected structure.
+          </div>
+        </div>
+      )}
+      {/* END SECTION :: AUTHOR TOOLS */}
+      {/* Fin sección :: Herramientas Autor */}
+
+      {/* ===================================================== */}
+      {/* SECTION :: AUTHOR TOOLS (side panel)                  */}
+      {/* Sección :: Herramientas autor (panel lateral)         */}
+      {/* Where: return() -> inside <div className="sidePanel"> */}
+      {/* ===================================================== */}
+
+      {isAuthor && (
+        <div style={{ marginBottom: 12, padding: 10, borderRadius: 12, background: "rgba(255,255,255,0.06)" }}>
+          <div style={{ fontWeight: 800, fontSize: 13 }}>Author mode</div>
+          <div style={{ fontSize: 12, opacity: 0.8, marginTop: 6 }}>
+            Click en la imagen para marcar puntos.
+          </div>
         </div>
       )}
 
-      {/* END SECTION :: [3.13.1.3] OVERLAYS (UI) */}
-      {/* Fin sección :: [3.13.1.3] Overlays */}
+      {/* END SECTION :: AUTHOR TOOLS */}
+      {/* Fin sección :: Herramientas autor */}
+
+
+      {/* ----------------------------------------------------- */}
+      {/* SECTION :: KEY SLICES (named navigation)              */}
+      {/* Sección :: Cortes clave (navegación con nombre)       */}
+      {/* Where: return() -> inside viewer overlays             */}
+      {/* Dónde: return() -> dentro de overlays del visor       *s/}
+      {/* ----------------------------------------------------- */}
+    
+      {/* END SECTION :: KEY SLICES (named navigation) */}
+      {/* Fin sección :: Cortes clave (navegación con nombre) */}
+
+
+    {/* END SECTION :: [3.13.1.3] OVERLAYS (UI) */}
+    {/* Fin sección :: [3.13.1.3] Overlays */}
+   
     </div>
+   
     {/* END SECTION :: [3.13.1] VIEWER */}
     {/* Fin sección :: [3.13.1] Visor principal */}
 
@@ -950,48 +1115,114 @@ return (
     {/* Dónde: return() -> después del viewer, antes del cierre  */}
     {/* ===================================================== */}
     <style jsx>{`
+      
       /* ===================================================== */
-      /* ROOT :: PAGE CONTAINER                                */
-      /* Contenedor raíz de la página (visor)                  */
+      /* SECTION :: LAYOUT :: 2 columns                         */
+      /* Sección :: Layout :: 2 columnas                         */
       /* ===================================================== */
       .appRoot {
         height: 100%;
-        width: 100%;
         display: flex;
-        background: #111;
+        flex-direction: row; /* CLAVE: que NO sea column */
+        background: #000;
         overflow: hidden;
         min-height: 0;
       }
 
-      /* ===================================================== */
-      /* VIEWER :: IMAGE CONTAINER                             */
-      /* Contenedor del visor de TC                            */
-      /* ===================================================== */
-      .viewer {
-        flex: 1;
-        min-width: 0;
+      /* Panel izquierdo PARA EL AUTOR -------- */
+      .sidePanel {
+        width: 260px;          /* CLAVE: ancho fijo */
+        flex: 0 0 260px;       /* CLAVE: no crece */
+        background: rgba(10, 10, 10, 0.95);
+        border-right: 1px solid #222;
+        padding: 12px;
+        overflow-y: auto;
+        color: white;
         min-height: 0;
+      }
+
+        /* ===================================================== */
+        /* SECTION :: KEY SLICES LIST (Side Panel)               */
+        /* Sección :: Lista Cortes Clave (Panel lateral)         */
+        /* Purpose (EN): vertical list with dark cards           */
+        /* Propósito (ES): lista vertical con tarjetas oscuras   */
+        /* ===================================================== */
+
+        .keySlicesList {
+          display: flex;
+          flex-direction: column; /* CLAVE: columna */
+          gap: 10px;
+        }
+
+        .sidePanelItem {
+          width: 100%;
+          display: block; /* evita comportamiento inline/fila */
+          text-align: left;
+
+          background: rgba(0, 0, 0, 0.85); /* negro */
+          color: white;
+
+          border: 1px solid rgba(255, 255, 255, 0.10);
+          border-radius: 12px;
+          padding: 10px 12px;
+
+          cursor: pointer;
+          transition: transform 120ms ease, background 120ms ease, border-color 120ms ease;
+        }
+
+        .sidePanelItem:hover {
+          background: rgba(0, 0, 0, 0.92);
+          border-color: rgba(255, 255, 255, 0.18);
+          transform: translateY(-1px);
+        }
+
+        .sidePanelItem.active {
+          background: rgba(37, 99, 235, 0.95); /* azul activo */
+          border-color: rgba(37, 99, 235, 1);
+        }
+
+        .sidePanelItemTitle {
+          font-weight: 800;
+          font-size: 13px;
+          line-height: 1.15;
+        }
+
+        .sidePanelItemSub {
+          margin-top: 4px;
+          font-size: 12px;
+          opacity: 0.8;
+        }
+
+        /* END SECTION :: KEY SLICES LIST (Side Panel) */
+        /* Fin sección :: Lista Cortes Clave (Panel lateral) */
+
+
+
+      /* Visor O VIEWER PRINCIPAL =========== */
+      .viewer {
+        flex: 1;               /* CLAVE: ocupa el resto */
+        min-width: 0;          /* CLAVE: evita overflow horizontal */
+        min-height: 0;         /* CLAVE: permite contener height */
         position: relative;
         overflow: hidden;
         display: flex;
-        justify-content: center;
         align-items: center;
+        justify-content: center;
         background: #000;
-        touch-action: none;
       }
 
-      /* ===================================================== */
-      /* IMAGE :: SLICE                                        */
-      /* Imagen del corte (se adapta al visor)                 */
-      /* ===================================================== */
       .viewerImg {
         width: 100%;
         height: 100%;
         object-fit: contain;
-        display: block;
         user-select: none;
         -webkit-user-drag: none;
       }
+      /* END SECTION :: LAYOUT :: 2 columns */
+      /* Fin sección :: Layout :: 2 columnas */
+
+
+
     `}</style>
     {/* END SECTION :: [3.13.2] STYLES */}
     {/* Fin sección :: [3.13.2] Styles */}

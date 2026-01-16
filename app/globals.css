@@ -41,30 +41,4 @@ body {
   box-sizing: border-box;
 }
 
-.appRoot {
-  height: 100%;
-  min-height: 0;
-  overflow: hidden;
-}
 
-.viewer {
-  position: 'relative';
-  width: 100%;
-  height: 100%;
-  min-height: 0;
-  overflow: hidden;
-  background: #000;
-  touch-action: none; /* clave si manejás gestos propios */
-}
-
-.viewerImg {
-  display: block;
-  max-width: 100%;
-  max-height: 100%;
-  width: auto;
-  height: auto;
-  object-fit: contain;
-  user-select: none;
-  -webkit-user-drag: none;
-  pointer-events: none;
-}

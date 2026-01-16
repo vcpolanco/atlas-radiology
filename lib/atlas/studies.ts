@@ -24,23 +24,31 @@ export const STUDIES: Study[] = [
     slicesExt: "jpg",
     sliceName: { prefix: "slice", pad: 3 }, // slice001.jpg ... slice083.jpg
 
-
-
-    // UI HELPERS
-    // Ayudas de UI
-    keySlices: [10, 12, 18, 25, 33, 45, 60],
-
-    // STRUCTURES (labels to display)
-    // Estructuras (etiquetas a mostrar)
-    structures: [
-      { id: "aorta", label: "Aorta" },
-      { id: "trachea", label: "Tráquea" },
-      { id: "esophagus", label: "Esófago" },
-      { id: "svc", label: "Vena cava superior" },
-      { id: "pulmonary_artery", label: "Arteria pulmonar" },
-      { id: "azygos", label: "Vena ácigos" },
+    // KEY SLICES :: Thorax CT (named)
+    // CORTES CLAVE :: TC Tórax (con nombre)
+      keySlices: [
+      { idx: 10, label: "Tráquea / Trachea" },
+      { idx: 12, label: "Carina" },
+      { idx: 18, label: "Cayado aórtico / Aortic arch" },
+      { idx: 25, label: "Arteria pulmonar / Pulmonary artery" },
+      { idx: 33, label: "Aurícula izquierda / Left atrium" },
+      { idx: 45, label: "Ventrículo izquierdo / Left ventricle" },
+      { idx: 60, label: "Diafragma / Diaphragm" },
     ],
-    annotationsBySlice: undefined
+    // =====================================================
+    // STRUCTURES :: Thorax (with side L/R/M)
+    // ESTRUCTURAS :: Tórax (con lado I/D/M)
+    // =====================================================
+    structures: [
+      { id: "aorta", label: "Aorta", side: "M" },
+      { id: "trachea", label: "Tráquea", side: "M" },
+      { id: "esophagus", label: "Esófago", side: "M" },
+      { id: "svc", label: "Vena cava superior", side: "R" },
+      { id: "pulmonary_artery", label: "Arteria pulmonar", side: "M" },
+      { id: "azygos", label: "Vena ácigos", side: "R" },
+    ],
+    // END SECTION :: STRUCTURES :: Thorax (with side)
+    // Fin sección :: Estructuras :: Tórax (con lado)
   },
   // END SECTION :: [S.1] STUDY :: Thorax CT Normal v1
   // Fin sección :: [S.1] Estudio TC Tórax normal v1
@@ -58,15 +66,44 @@ export const STUDIES: Study[] = [
     slicesExt: "jpg",
     sliceName: { prefix: "slice", pad: 3 }, // slice001.jpg ... slice105.jpg
 
-    keySlices: [8, 15, 22, 30, 38, 47, 58, 70, 85, 98],
+    // =====================================================
+    // KEY SLICES :: Abdomen CT (named)
+    // CORTES CLAVE :: TC Abdomen (con nombre)
+    // Purpose (EN): quick navigation to key anatomy levels
+    // Propósito (ES): navegación rápida por niveles anatómicos clave
+    // =====================================================
+    keySlices: [
+      { idx: 10, label: "Estómago / Stomach" },
+      { idx: 30, label: "Riñón (nivel medio) / Kidney (mid level)" },
+      { idx: 50, label: "Vejiga / Bladder" },
+      { idx: 70, label: "Pelvis (vejiga/próstata si visible) / Pelvis (bladder/prostate if visible)" },
+    ],
+    // END SECTION :: KEY SLICES :: Abdomen CT (named)
+    // Fin sección :: Cortes clave :: TC Abdomen (con nombre)
 
-    // Por ahora vacío, pero listo para completar
-    structures: [],
-    annotationsBySlice: undefined
+
+    // =====================================================
+    // STRUCTURES :: Abdomen (with side L/R/M)
+    // ESTRUCTURAS :: Abdomen (con lado I/D/M)
+    // =====================================================
+    structures: [
+      { id: "stomach", label: "Estómago", side: "L" },
+      { id: "liver", label: "Hígado", side: "R" },
+      { id: "spleen", label: "Bazo", side: "L" },
+      { id: "kidney_r", label: "Riñón derecho", side: "R" },
+      { id: "kidney_l", label: "Riñón izquierdo", side: "L" },
+      { id: "bladder", label: "Vejiga", side: "M" },
+    ],
+    // END SECTION :: STRUCTURES :: Abdomen (with side)
+    // Fin sección :: Estructuras :: Abdomen (con lado)
+
+    
   },
   // END SECTION :: [S.2] STUDY :: Abdomen CT Normal v1
   // Fin sección :: [S.2] Estudio TC Abdomen normal v1
 ]
+
+
 // END SECTION :: [S] STUDIES :: REGISTRY
 // Fin sección :: [S] Registro de estudios
 
