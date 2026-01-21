@@ -456,28 +456,26 @@ export default function Page() {
 
           const text = await res.text()
           const parsed = safeParseAnnotations(text)
+          if (!parsed) return
 
           console.log('parsed slices:', parsed && Object.keys(parsed)) // TEMPORALMENTE
 
-
-          if (!cancelled && parsed) {
-            setAnnotationsBySlice(parsed)
-          }
-
-
-
+      
 
         // NOTE (EN): data is Record<string, Annotation[]>
         // NOTA (ES): data es Record<string, Annotation[]>
+        
+
         const normalized: AnnotationsBySlice = {}
 
-        for (const [k, arr] of Object.entries(data ?? {})) {
+        for (const [k, arr] of Object.entries(parsed)) {
           const idx = Number(k)
           if (!Number.isFinite(idx) || !Array.isArray(arr)) continue
-          normalized[idx] = arr
-            .filter((it) => it && typeof it === "object")
+          
+          normalized[String(idx)] = arr
+            .filter((it) => it && typeof it === 'object')
             .map((it: any) => ({
-              structureId: String(it.structureId ?? "unknown"),
+              structureId: String(it.structureId ?? 'unknown'),
               x: Number(it.x),
               y: Number(it.y),
             }))
@@ -841,15 +839,20 @@ return (
         {/* ===================================================== */}
 
         <div className="keySlicesList">
-          {study.keySlices?.map((idx) => (
+          {study.keySlices?.map((k) => {
+            const idx = typeof k === "number" ? k : k.idx
+            const fallbackLabel = typeof k === "number" ? undefined : k.label
+
+            return (
             <button
               key={`slice-${idx}`}
               onClick={() => setSlice(idx)}
               className={`sidePanelItem ${idx === slice ? "active" : ""}`}
             >
-              {KEY_SLICE_LABELS_ES[idx] ?? `Slice ${idx}`}
+              {KEY_SLICE_LABELS_ES[idx] ?? fallbackLabel ?? `Slice ${idx}`}
             </button>
-          ))}
+            )
+          })}
 
 
         </div>
