@@ -18,10 +18,7 @@ export type SliceAnnotations = Record<number, Annotation[]>
 // Purpose (EN): allow "key slices" to have anatomy labels
 // Propósito (ES): permitir que los cortes clave tengan nombre anatómico
 // =====================================================
-export type KeySlice = {
-  idx: number // 0-based slice index / índice 0-based
-  label: string // display name / nombre a mostrar
-}
+export type KeySlice = number | { idx: number; label?: string }
 // END SECTION :: TYPES :: KeySlice
 // Fin sección :: Tipos :: Corte clave
 
@@ -50,18 +47,6 @@ export type Structure = {
 }
 // END SECTION :: TYPES :: Structure
 // Fin sección :: Tipos :: Estructura
-
-
-// =====================================================
-// TYPES :: KeySlice
-// TIPOS :: Corte clave
-// Purpose (EN): named slice shortcuts for navigation panel
-// Propósito (ES): atajos con nombre para panel de navegación
-// =====================================================
-export type KeySlice = { idx: number; label: string }
-// END SECTION :: TYPES :: KeySlice
-// Fin sección :: Tipos :: Corte clave
-
 
 
 // =====================================================
