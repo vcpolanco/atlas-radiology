@@ -8,8 +8,16 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { useParams } from "next/navigation"
 
+// importar el descargador de JSON
+import { downloadJson } from '@/lib/atlas/downloadJson'
+
 // habilitar author mode con query param
 import { useSearchParams } from "next/navigation"
+
+
+// importa las etiquetas o Labels de lib/atlas/labels
+import { TORAX_TC_LABELS_ES } from '@/lib/atlas/labels/torax_tc_es'
+
 
 import { getStudyById } from "@/lib/atlas/studies"
 import { buildSliceUrl } from "@/lib/atlas/loader"
@@ -28,7 +36,8 @@ type Annotation = { structureId: string; x: number; y: number }
 
 // TYPE :: annotations grouped by slice index
 // TIPO :: anotaciones agrupadas por índice de corte
-type AnnotationsBySlice = Record<number, Annotation[]>
+ type AnnotationsBySlice = Record<string, Annotation[] | undefined>
+
 
 // -----------------------------------------------------
 // TYPES :: CALLOUTS GEOMETRY
@@ -95,6 +104,14 @@ export default function Page() {
   // =====================================================
   const searchParams = useSearchParams()
   
+  // Propósito (ES): habilitar edición solo con ?author=1
+  
+  const isAuthor = useMemo(() => {
+    if (typeof window === "undefined") return false
+    const sp = new URLSearchParams(window.location.search)
+    return sp.get("author") === "1"
+  }, [])
+    
   // END SECTION :: MODE :: Author
   // Fin sección :: Modo :: Autor
 
@@ -144,6 +161,10 @@ export default function Page() {
   // END SECTION :: [3.4] STATE :: VIEWER NAVIGATION + UI
   // Fin sección :: [3.4] State navigation + UI
 
+  // SECTION :: [3.3] STATE
+  const [mounted, setMounted] = useState(false)
+
+  
   // =====================================================
   // [3.5] REFS :: TOUCH (MOBILE GESTURES)
   // Refs :: touch gesture tracking (for swipe)
@@ -192,11 +213,10 @@ export default function Page() {
     return buildSliceUrl(study, slice)
   }, [study, slice])
   // END SECTION :: [3.8] MEMO :: IMAGE URL (CURRENT SLICE)
-  // Fin sección :: [3.8] Memo imageUrl
-
+  // Fin sección :: [3.8] Memo imageUrl // 
   
 
-
+  
 // =====================================================
   // [3.9] EFFECT :: CALLOUT GEOMETRY UPDATE
   // Effect :: recompute geometry on image load / resize
@@ -253,13 +273,17 @@ export default function Page() {
   // END SECTION :: [3.9] EFFECT :: CALLOUT GEOMETRY UPDATE
   // Fin sección :: [3.9] Effect geom update
 
- 
+  // SECTION :: [3.6] EFFECTS
+  useEffect(() => {
+    setMounted(true)
+  }, [])
+
  // =====================================================
   // [3.10] MEMO :: CURRENT SLICE ANNOTATIONS
   // Memo :: annotations for the current slice index
   // Memo :: anotaciones del índice de corte actual
   // =====================================================
-  const annotations = annotationsBySlice[slice] || []
+  const annotations = annotationsBySlice[String(slice)] ?? []
   // END SECTION :: [3.10] MEMO :: CURRENT SLICE ANNOTATIONS
   // Fin sección :: [3.10] Memo annotations
 
@@ -277,12 +301,23 @@ export default function Page() {
   function safeParseAnnotations(json: string): AnnotationsBySlice | null {
     try {
       const data = JSON.parse(json)
-      if (!data || typeof data !== "object") return null
-      return data as AnnotationsBySlice
+
+      // Caso 1: formato nuevo con wrapper
+      if (data && typeof data === 'object' && data.annotationsBySlice) {
+        return data.annotationsBySlice as AnnotationsBySlice
+      }
+
+      // Caso 2: formato viejo plano
+      if (data && typeof data === 'object') {
+        return data as AnnotationsBySlice
+      }
+
+      return null
     } catch {
       return null
     }
   }
+
   // END SECTION :: [3.11] STORAGE :: KEYS + PARSER
   // Fin sección :: [3.11] Storage keys + parser
 
@@ -402,14 +437,35 @@ export default function Page() {
   // NOTE (EN): this should be the primary source for the public atlas
   // NOTA (ES): esta debería ser la fuente principal para el atlas público
   useEffect(() => {
+    
+    if (isAuthor) return // no sobrescribir durante edición
+
     let cancelled = false
+    
+    // ++++ este es el LOAD ++++++++++++++++++++++++ //
 
     async function load() {
       if (!study) return
       try {
-        const res = await fetch(`${study.basePath}/annotations.json`, { cache: "no-store" })
-        if (!res.ok) throw new Error("No annotations.json")
-        const data = await res.json()
+          const res = await fetch(
+            `${study.basePath}/annotations.json?v=${Date.now()}`,
+            { cache: 'no-store' }
+          )
+
+          if (!res.ok) throw new Error('No annotations.json')
+
+          const text = await res.text()
+          const parsed = safeParseAnnotations(text)
+
+          console.log('parsed slices:', parsed && Object.keys(parsed)) // TEMPORALMENTE
+
+
+          if (!cancelled && parsed) {
+            setAnnotationsBySlice(parsed)
+          }
+
+
+
 
         // NOTE (EN): data is Record<string, Annotation[]>
         // NOTA (ES): data es Record<string, Annotation[]>
@@ -438,9 +494,11 @@ export default function Page() {
     return () => {
       cancelled = true
     }
-  }, [studyId, study])
+  }, [studyId, isAuthor])
   // END SECTION :: [3.17] EFFECT :: LOAD CURATED ANNOTATIONS (annotations.json)
   // Fin sección :: [3.17] Effect load curated annotations
+
+
 
   // =====================================================
   // [3.18] HANDLER :: WHEEL SLICE NAVIGATION
@@ -460,6 +518,22 @@ export default function Page() {
   // END SECTION :: [3.18] HANDLER :: WHEEL SLICE NAVIGATION
   // Fin sección :: [3.18] Handler onWheel
 
+
+
+  // SECTION :: [3.7] HANDLERS / HELPERS
+  // helper: map structureId -> label visible (ES)
+  const structureLabel = (structureId: string) =>
+    TORAX_TC_LABELS_ES[structureId] ?? structureId
+
+
+  // SECTION :: [3.5] MEMOS / DERIVED
+  const KEY_SLICE_LABELS_ES: Record<number, string> = {
+    14: 'Arco aórtico',
+    21: 'Carina',
+    27: 'Hilios',
+    33: 'Corazón (medio)',
+    39: 'VCI / Bases',
+  }
 
   // =====================================================
   // [3.19] GUARD :: STUDY NOT FOUND
@@ -507,6 +581,40 @@ export default function Page() {
   // END SECTION :: handler: addPointAtClick
   // Fin sección :: handler: addPointAtClick
 
+  
+  
+  // =====================================================
+  // HANDLERS // HELPERS fx: EXPORTAR ANOTACIONES
+  // =====================================================
+
+  // EXPORT (author) — descarga annotations.json listo para colocar en /public/studies/<studyId>/
+const exportAnnotationsJson = () => {
+  // Normalizamos keys a string (JSON-friendly)
+  const normalized: Record<string, Annotation[]> = {}
+
+  for (const [k, arr] of Object.entries(annotationsBySlice ?? {})) {
+    if (!Array.isArray(arr)) continue
+
+    normalized[String(k)] = arr
+      .filter((it) => it && typeof it === 'object')
+      .map((it) => ({
+        structureId: String((it as any).structureId ?? 'unknown'),
+        x: Number((it as any).x),
+        y: Number((it as any).y),
+      }))
+      .filter((it) => Number.isFinite(it.x) && Number.isFinite(it.y))
+  }
+
+  const payload = {
+    version: 1,
+    studyId: study.id,
+    createdAt: new Date().toISOString(),
+    annotationsBySlice: normalized,
+  }
+
+  downloadJson(payload, 'annotations.json')
+}
+// FIN hnadler para exportar anotaciones //
 
   // =====================================================
   // fx: upsertAnnotationAtSlice PARA ANOTAR DONDE VA EL LABEL
@@ -553,18 +661,7 @@ export default function Page() {
   // Fin sección :: [3.21] fx deleteAnnotationAt
 
 
-  // =====================================================
-  // [3.22] fx :: STRUCTURE LABEL RESOLVER
-  // Function :: maps structureId -> human label (from study.structures)
-  // Función :: mapea structureId -> etiqueta legible (desde study.structures)
-  // =====================================================
-  // fx: structureLabel (id -> label)
-  // fx: structureLabel (id -> label)
-  function structureLabel(id: string) {
-    return study?.structures?.find((s) => s.id === id)?.label ?? id
-  }
-  // END SECTION :: [3.22] fx :: STRUCTURE LABEL RESOLVER
-  // Fin sección :: [3.22] fx structureLabel
+  
 
   // =====================================================
   // [3.11] fx :: CALLOUT LAYOUT MANAGER
@@ -636,21 +733,7 @@ export default function Page() {
   // Fin sección :: [3.11] fx layoutCallouts
 
 
-  // == MODO AUTOR VISIBLE========================================
-  // MEMO :: AUTHOR MODE (query flag)
-  // MEMO :: MODO AUTOR (flag en query)
-  // Purpose (EN): enable point editing only with ?author=1
-  // Propósito (ES): habilitar edición solo con ?author=1
-  // =====================================================
-  const isAuthor = useMemo(() => {
-    if (typeof window === "undefined") return false
-    const sp = new URLSearchParams(window.location.search)
-    return sp.get("author") === "1"
-  }, [])
-  // END SECTION :: MEMO :: AUTHOR MODE
-  // Fin sección :: Memo :: Modo autor
-
-
+  
 
 
   // =====================================================
@@ -758,21 +841,17 @@ return (
         {/* ===================================================== */}
 
         <div className="keySlicesList">
-          {study.keySlices?.map((k) => (
+          {study.keySlices?.map((idx) => (
             <button
-              key={`slice-${k.idx}`}
-              onClick={() => setSlice(k.idx)}
-              className={`sidePanelItem ${k.idx === slice ? "active" : ""}`}
+              key={`slice-${idx}`}
+              onClick={() => setSlice(idx)}
+              className={`sidePanelItem ${idx === slice ? "active" : ""}`}
             >
-              <div className="sidePanelItemTitle">
-                {k.label}
-              </div>
-
-              <div className="sidePanelItemSub">
-                Corte {k.idx + 1}
-              </div>
+              {KEY_SLICE_LABELS_ES[idx] ?? `Slice ${idx}`}
             </button>
           ))}
+
+
         </div>
 
         {/* END SECTION :: KEY SLICES (Side Panel) */}
@@ -1017,9 +1096,8 @@ return (
       {/* Sección :: Herramientas Autor (solo si isAuthor)      */}
       {/* Where: return() -> inside viewer overlays             */}
       {/* ===================================================== */}
-      {isAuthor && (
-        <div
-          style={{
+      {mounted && isAuthor && (
+        <div style={{
             position: "absolute",
             top: 52,
             left: 12,
@@ -1066,6 +1144,28 @@ return (
           </div>
         </div>
       )}
+
+        {/* ------------ AUTHOR TOOLS Boton visible para exportar JSON */}
+        {/* AUTHOR TOOLS */}
+          {mounted && isAuthor && (
+            <div style={{ marginTop: 12 }}>
+              <button
+                onClick={exportAnnotationsJson}
+                style={{
+                  width: '100%',
+                  padding: '8px 10px',
+                  cursor: 'pointer',
+                }}
+              >
+                Exportar annotations.json
+              </button>
+              <div style={{ fontSize: 12, opacity: 0.8, marginTop: 6 }}>
+                Descarga el archivo y pegalo en public/studies/{study.id}/annotations.json
+              </div>
+            </div>
+          )}
+
+
       {/* END SECTION :: AUTHOR TOOLS */}
       {/* Fin sección :: Herramientas Autor */}
 
@@ -1075,8 +1175,8 @@ return (
       {/* Where: return() -> inside <div className="sidePanel"> */}
       {/* ===================================================== */}
 
-      {isAuthor && (
-        <div style={{ marginBottom: 12, padding: 10, borderRadius: 12, background: "rgba(255,255,255,0.06)" }}>
+      {mounted && isAuthor && (
+          <div style={{ marginBottom: 12, padding: 10, borderRadius: 12, background: "rgba(255,255,255,0.06)" }}>
           <div style={{ fontWeight: 800, fontSize: 13 }}>Author mode</div>
           <div style={{ fontSize: 12, opacity: 0.8, marginTop: 6 }}>
             Click en la imagen para marcar puntos.
@@ -1221,6 +1321,13 @@ return (
       /* END SECTION :: LAYOUT :: 2 columns */
       /* Fin sección :: Layout :: 2 columnas */
 
+      
+      /* SE DEFINE EL BOTON APRA DESCARGAR ANOTACIONES */
+      {mounted && isAuthor && (
+        <button onClick={exportAnnotations}>
+          Exportar annotations.json
+        </button>
+      )}
 
 
     `}</style>

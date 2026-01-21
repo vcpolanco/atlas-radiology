@@ -26,15 +26,9 @@ export const STUDIES: Study[] = [
 
     // KEY SLICES :: Thorax CT (named)
     // CORTES CLAVE :: TC Tórax (con nombre)
-      keySlices: [
-      { idx: 10, label: "Tráquea / Trachea" },
-      { idx: 12, label: "Carina" },
-      { idx: 18, label: "Cayado aórtico / Aortic arch" },
-      { idx: 25, label: "Arteria pulmonar / Pulmonary artery" },
-      { idx: 33, label: "Aurícula izquierda / Left atrium" },
-      { idx: 45, label: "Ventrículo izquierdo / Left ventricle" },
-      { idx: 60, label: "Diafragma / Diaphragm" },
-    ],
+     
+    keySlices: [14, 21, 27, 33, 39],
+
     // =====================================================
     // STRUCTURES :: Thorax (with side L/R/M)
     // ESTRUCTURAS :: Tórax (con lado I/D/M)
