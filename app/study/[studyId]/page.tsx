@@ -124,6 +124,21 @@ export default function Page() {
   // =====================================================
   const [isMobile, setIsMobile] = useState(false)
 
+  
+  // EFFECT PARA MOBILE ----------------------------------
+
+  useEffect(() => {
+  const checkMobile = () => {
+    setIsMobile(window.innerWidth < 768)
+  }
+  checkMobile()
+  window.addEventListener("resize", checkMobile)
+  return () => window.removeEventListener("resize", checkMobile)
+}, [])
+
+// fin del EFFECT del MOBILE
+
+
   // EFFECT :: matchMedia mobile detection (updates isMobile)
   // EFECTO :: detección móvil por matchMedia (actualiza isMobile)
   useEffect(() => {
@@ -812,7 +827,7 @@ const exportAnnotationsJson = () => {
   // END SECTION :: [3.12] MEMO :: CALLOUTS (COMPUTE + LAYOUT)
   // Fin sección :: [3.12] Memo callouts
 
-
+  
 
 // ************** R E T U R N  principal ************ //
 
@@ -829,7 +844,11 @@ return (
      {/* SECTION :: SIDE PANEL (navigation / author)   */}
      {/* Sección :: Panel lateral (navegación / autor) */}
      {/* ============================================= */}
-     <div className="sidePanel">
+     <div className="sidePanel" style ={{
+        width: isMobile ? 180 : 320,
+        transition: "width 0.2s ease"
+     }}>
+
       {/* Author mode / Cortes clave */}
       {/* ===================================================== */}
 
