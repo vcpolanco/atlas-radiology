@@ -217,6 +217,13 @@ export default function Page() {
   // Fin sección :: [3.7] State geom
 
 
+  // =====================================================
+  // [3.3.x] STATE :: SIDEBAR OPEN (mobile)
+  // =====================================================
+  const [sidebarOpen, setSidebarOpen] = useState(true)
+
+
+
 
  // =====================================================
   // [3.8] MEMO :: IMAGE URL (CURRENT SLICE)
@@ -292,6 +299,17 @@ export default function Page() {
   useEffect(() => {
     setMounted(true)
   }, [])
+
+ 
+  // =====================================================
+  // [3.6.x] EFFECT :: AUTO-CLOSE SIDEBAR ON MOBILE (on slice change)
+  // =====================================================
+  useEffect(() => {
+    if (isMobile) setSidebarOpen(false)
+  }, [slice, isMobile])
+ // fin del EFFECT autoclose sidebar on mobile
+
+
 
  // =====================================================
   // [3.10] MEMO :: CURRENT SLICE ANNOTATIONS
@@ -827,7 +845,58 @@ const exportAnnotationsJson = () => {
   // END SECTION :: [3.12] MEMO :: CALLOUTS (COMPUTE + LAYOUT)
   // Fin sección :: [3.12] Memo callouts
 
-  
+  // =====================================================
+  // [3.10.1] STYLES HELPERS (SIDEBAR BUTTONS)
+  // =====================================================
+  const sideBtnStyle: React.CSSProperties = {
+    width: "100%",
+    textAlign: "left",
+    borderRadius: 12,
+    border: "1px solid rgba(255,255,255,0.12)",
+    background: "rgba(0,0,0,0.35)",
+    color: "white",
+    cursor: "pointer",
+    padding: isMobile ? "10px 12px" : "14px 16px",
+    fontSize: isMobile ? 13 : 15,
+    marginBottom: isMobile ? 6 : 10,
+    lineHeight: 1.2,
+    transition: "background 0.15s ease, transform 0.05s ease",
+  }
+
+  // =====================================================
+  // [3.10.2] STYLES HELPERS (CALLOUTS LABELS)
+  // =====================================================
+
+    const calloutLabelStyle: React.CSSProperties = {
+    pointerEvents: "none",
+    background: "rgba(0, 0, 0, 0.90)",
+    color: "white",
+    borderRadius: 10,
+    border: "1px solid rgba(255,255,255,0.15)",
+    whiteSpace: "nowrap",
+    overflow: "hidden",
+    textOverflow: "ellipsis",
+    transform: "translate(0, -50%)",
+    fontSize: isMobile ? 11 : 14,
+    padding: isMobile ? "4px 7px" : "6px 8px",
+    maxWidth: isMobile ? 160 : 260,
+  }
+
+  // =====================================================
+  // [3.10.3] STYLES HELPERS (CALLOUT DOTS)
+  // =====================================================
+  const calloutDotStyle: React.CSSProperties = {
+    width: isMobile ? 7 : 10,
+    height: isMobile ? 7 : 10,
+    borderRadius: 999,
+    background: "#22c55e",
+    border: isMobile
+      ? "1.5px solid rgba(0,0,0,0.6)"
+      : "2px solid rgba(0,0,0,0.6)",
+    boxShadow: "0 2px 8px rgba(0,0,0,0.45)",
+  }
+
+
 
 // ************** R E T U R N  principal ************ //
 
@@ -845,8 +914,11 @@ return (
      {/* Sección :: Panel lateral (navegación / autor) */}
      {/* ============================================= */}
      <div className="sidePanel" style ={{
-        width: isMobile ? 180 : 320,
-        transition: "width 0.2s ease"
+        width: sidebarOpen ? (isMobile ? 180 : 320) : 0,
+        padding: sidebarOpen ? 12 : 0,
+        overflow: "hidden",
+        transition: "width 0.18s ease, padding 0.18s ease",
+        pointerEvents: sidebarOpen ? "auto" : "none",
      }}>
 
       {/* Author mode / Cortes clave */}
@@ -867,6 +939,10 @@ return (
               key={`slice-${idx}`}
               onClick={() => setSlice(idx)}
               className={`sidePanelItem ${idx === slice ? "active" : ""}`}
+              style={{
+                ...sideBtnStyle,
+                background: idx === slice ? "rgba(59,130,246,0.85)" : sideBtnStyle.background,
+              }}
             >
               {KEY_SLICE_LABELS_ES[idx] ?? fallbackLabel ?? `Slice ${idx}`}
             </button>
@@ -896,6 +972,29 @@ return (
       onClick={isAuthor ? addPointAtClick : undefined}
       className="viewer">
     
+
+     {/* boton del panel para abrir/cerrar on MOBILE      */}
+
+      <button
+        onClick={() => setSidebarOpen((v) => !v)}
+        style={{
+          position: "absolute",
+          top: 10,
+          left: 10,
+          zIndex: 99999,
+          padding: isMobile ? "8px 10px" : "8px 12px",
+          fontSize: isMobile ? 12 : 13,
+          borderRadius: 12,
+          border: "1px solid rgba(255,255,255,0.14)",
+          background: "rgba(0,0,0,0.55)",
+          color: "white",
+          cursor: "pointer",
+        }}
+      >
+        {sidebarOpen ? "Ocultar" : "Slices"}
+      </button>
+
+
       {/* ----------------------------------------------------- */}
       {/* [3.13.1.1] SECTION :: IMAGE (slice)                    */}
       {/* Sección :: Imagen (corte)                             */}
@@ -951,7 +1050,7 @@ return (
 
 
           {/* ----------------------------------------------------- */}
-          {/* [3.13.1.2.2] POINTS :: anatomical points              */}
+          {/* [3.13.1.2.2] POINTS / DOTS :: anatomical points       */}
           {/* Puntos :: puntos anatómicos                           */}
           {/* Note (EN): read-only overlay                          */}
           {/* Nota (ES): overlay de solo lectura                    */}
@@ -965,12 +1064,10 @@ return (
                 top: c.py,
                 transform: "translate(-50%, -50%)",
                 zIndex: 8500,
-                width: 10,
-                height: 10,
-                borderRadius: 999,
-                background: "#22c55e",
-                border: "2px solid rgba(0,0,0,0.6)",
                 pointerEvents: "none",
+
+                // responsive dot Style
+                ...calloutDotStyle,
               }}
             />
           ))}
@@ -992,26 +1089,17 @@ return (
                   position: "absolute",
                   top: c.endY,
                   zIndex: 9000,
-                  pointerEvents: "none",
-                  background: "rgba(0, 0, 0, 0.90)",
-                  color: "white",
-                  fontSize: 14,
-                  padding: "6px 8px",
-                  borderRadius: 10,
-                  border: "1px solid rgba(255,255,255,0.15)",
-                  whiteSpace: "nowrap",
-                  maxWidth: 260,
-                  overflow: "hidden",
-                  textOverflow: "ellipsis",
+                  
+                  // base label style (responsive)
+                  ...calloutLabelStyle,
 
                   // anchor inside viewer:
                   // ancla dentro del visor:
                   left: c.isLeft ? c.endX : undefined,
-                  right: c.isLeft ? undefined : 12,
+                  right: c.isLeft ? undefined : (isMobile ? 8 : 12),
 
                   // align text:
                   // alinear texto:
-                  transform: "translate(0, -50%)",
                   textAlign: c.isLeft ? "left" : "right",
 
                 }}
