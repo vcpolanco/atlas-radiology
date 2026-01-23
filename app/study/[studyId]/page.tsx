@@ -536,16 +536,7 @@ export default function Page() {
     const items: CalloutItem[] = annotations.map((a, idx) => {
       const s = study.structures.find((it) => it.id === a.structureId)
 
-      const sideTag =
-        s?.side === 'L'
-          ? ' (L)'
-          : s?.side === 'R'
-            ? ' (R)'
-            : s?.side === 'M'
-              ? ' (M)'
-              : ''
-
-      const label = (s?.label ?? structureLabel(a.structureId)) + sideTag
+      const label = s?.label ?? structureLabel (a.structureId)
 
       const px = geom.i.left - geom.v.left + a.x * geom.i.width
       const py = geom.i.top - geom.v.top + a.y * geom.i.height
