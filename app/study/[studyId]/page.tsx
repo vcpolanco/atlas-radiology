@@ -4,7 +4,7 @@
    [1] IMPORTS
    ===================================================== */
 import React, { useEffect, useMemo, useRef, useState } from 'react'
-import { useParams } from 'next/navigation'
+import { useParams, useSearchParams } from 'next/navigation'
 
 import { downloadJson } from '@/lib/atlas/downloadJson'
 import { TORAX_TC_LABELS_ES } from '@/lib/atlas/labels/torax_tc_es'
@@ -68,11 +68,8 @@ export default function Page() {
   /* =====================================================
      [3.2] MODE :: AUTHOR (?author=1)
      ===================================================== */
-  const isAuthor = useMemo(() => {
-    if (typeof window === 'undefined') return false
-    const sp = new URLSearchParams(window.location.search)
-    return sp.get('author') === '1'
-  }, [])
+    const searchParams = useSearchParams()
+    const isAuthor = searchParams.get('author') === '1'
   /* END [3.2] MODE :: AUTHOR */
 
 
@@ -200,8 +197,12 @@ export default function Page() {
 
 
   /* =====================================================
-     [3.10] EFFECT :: callout geometry (viewer + image rects)
-     ===================================================== */
+   [3.10] EFFECT :: callout geometry (viewer + image rects)
+   Purpose (EN): recompute viewer/image rects after image load + layout reflow
+   Propósito (ES): recalcular rects de viewer/imagen tras load + reflow de layout
+   Where: Page() -> effects -> geometry used by callouts/dots/labels
+   ===================================================== */
+
   useEffect(() => {
     const update = () => {
       const v = viewerRef.current
@@ -231,21 +232,27 @@ export default function Page() {
       })
     }
 
-    update()
+    // Initial + reflow-safe update (double RAF)
+    // Actualización inicial + segura ante reflow (doble RAF)
+    const raf1 = window.requestAnimationFrame(() => {
+      update()
+      window.requestAnimationFrame(update)
+    })
+
     window.addEventListener('resize', update)
 
     const img = imgRef.current
     if (img) img.addEventListener('load', update)
 
-    const t = window.setTimeout(update, 0)
-
     return () => {
+      window.cancelAnimationFrame(raf1)
       window.removeEventListener('resize', update)
       if (img) img.removeEventListener('load', update)
-      window.clearTimeout(t)
     }
-  }, [imageUrl])
+  }, [imageUrl, isMobile])
+
   /* END [3.10] EFFECT :: callout geometry */
+
 
 
   /* =====================================================
@@ -626,13 +633,29 @@ export default function Page() {
 
 
   /* =====================================================
+    [3.27] UI FLAGS :: minimal mode
+    ===================================================== */
+  const SHOW_LEFT_PANEL_PUBLIC = false // visor minimalista
+  const showLeftPanel = mounted && (isAuthor ? true : SHOW_LEFT_PANEL_PUBLIC)
+  /* END [3.27] UI FLAGS :: minimal mode */
+
+
+
+/* ============= R E T U R N principal ==================*/
+
+
+
+  /* =====================================================
      [3.30] JSX :: return
      ===================================================== */
   return (
     <div className="appRoot">
+
       {/* =====================================================
-         [3.30.1] JSX :: sidePanel
-         ===================================================== */}
+    [3.30.1] JSX :: sidePanel (optional)
+    Where: return() -> inside <div className="appRoot">
+   ===================================================== */}
+    {showLeftPanel && (
       <aside
         className="sidePanel"
         style={{
@@ -640,32 +663,7 @@ export default function Page() {
           pointerEvents: sidebarOpen ? 'auto' : 'none',
         }}
       >
-        {/* [3.30.1.0] SidePanel :: debug info (optional) */}
-        {mounted && isAuthor && (
-          <div style={{ marginBottom: 10, color: 'white', opacity: 0.65, fontSize: 11 }}>
-            Source: {lastLoadedFile || '—'}
-          </div>
-        )}
-
-        {/* [3.30.1.1] SidePanel :: Author badge */}
-        {mounted && isAuthor && (
-          <div
-            style={{
-              marginBottom: 12,
-              padding: 10,
-              borderRadius: 12,
-              background: 'rgba(255,255,255,0.06)',
-              color: 'white',
-            }}
-          >
-            <div style={{ fontWeight: 800, fontSize: 13 }}>Author mode</div>
-            <div style={{ fontSize: 12, opacity: 0.8, marginTop: 6 }}>
-              Click en la imagen para marcar puntos.
-            </div>
-          </div>
-        )}
-
-        {/* [3.30.1.2] SidePanel :: key slices list */}
+        {/* SidePanel content */}
         <div className="keySlicesList">
           {study.keySlices?.map((k) => {
             const idx = typeof k === 'number' ? k : k.idx
@@ -688,7 +686,9 @@ export default function Page() {
           })}
         </div>
       </aside>
-      {/* END [3.30.1] JSX :: sidePanel */}
+    )}
+    {/* END [3.30.1] JSX :: sidePanel (optional) */}
+
 
       {/* =====================================================
          [3.30.2] JSX :: viewer
@@ -699,7 +699,9 @@ export default function Page() {
         onClick={isAuthor ? addPointAtClick : undefined}
         className="viewer"
       >
-        {/* [3.30.2.1] Viewer :: toggle sidebar */}
+        {/* [3.30.2.1] Viewer :: toggle sidebar   POR AHORA SILENCIADO */}
+        
+        {showLeftPanel && (
         <button
           onClick={(e) => {
             e.stopPropagation()
@@ -721,6 +723,8 @@ export default function Page() {
         >
           {sidebarOpen ? 'Ocultar' : 'Slices'}
         </button>
+        )}
+
 
         {/* [3.30.2.2] Viewer :: slice counter */}
         <div
