@@ -196,6 +196,56 @@ export default function Page() {
   /* END [3.9] EFFECT :: auto-close sidebar */
 
 
+
+/* =====================================================
+   [3.9.1] HELPER :: contained image rect (object-fit: contain)
+   Purpose (EN): get the real displayed image box inside the <img> element
+   Propósito (ES): obtener la caja real de la imagen dentro del <img> (con contain)
+   Where: Page() -> helpers -> used by geometry + author clicks + callouts
+   ===================================================== */
+  function getContainedImageRectPx(imgEl: HTMLImageElement, imgRect: DOMRect) {
+    const natW = imgEl.naturalWidth || 0
+    const natH = imgEl.naturalHeight || 0
+
+    // Fallback: if not loaded, assume full element rect
+    if (!natW || !natH) {
+      return { left: imgRect.left, top: imgRect.top, width: imgRect.width, height: imgRect.height }
+    }
+
+    const containerW = imgRect.width
+    const containerH = imgRect.height
+    const imgAspect = natW / natH
+    const containerAspect = containerW / containerH
+
+    let drawW = containerW
+    let drawH = containerH
+    let offsetX = 0
+    let offsetY = 0
+
+    // object-fit: contain => fit by limiting dimension
+    if (imgAspect > containerAspect) {
+      // image is wider -> full width, letterbox top/bottom
+      drawW = containerW
+      drawH = containerW / imgAspect
+      offsetY = (containerH - drawH) / 2
+    } else {
+      // image is taller -> full height, letterbox left/right
+      drawH = containerH
+      drawW = containerH * imgAspect
+      offsetX = (containerW - drawW) / 2
+    }
+
+    return {
+      left: imgRect.left + offsetX,
+      top: imgRect.top + offsetY,
+      width: drawW,
+      height: drawH,
+    }
+  }
+  /* END [3.9.x] HELPER :: contained image rect */
+
+
+
   /* =====================================================
    [3.10] EFFECT :: callout geometry (viewer + image rects)
    Purpose (EN): recompute viewer/image rects after image load + layout reflow
@@ -211,7 +261,8 @@ export default function Page() {
 
       const vr = v.getBoundingClientRect()
       const ir = i.getBoundingClientRect()
-
+      const cr = getContainedImageRectPx(i, ir)
+      
       setGeom({
         v: {
           left: vr.left,
@@ -222,12 +273,12 @@ export default function Page() {
           bottom: vr.bottom,
         },
         i: {
-          left: ir.left,
-          top: ir.top,
-          width: ir.width,
-          height: ir.height,
-          right: ir.right,
-          bottom: ir.bottom,
+          left: cr.left,
+          top: cr.top,
+          width: cr.width,
+          height: cr.height,
+          right: cr.left + cr.width,
+          bottom: cr.top + cr.height,
         },
       })
     }
@@ -442,8 +493,10 @@ export default function Page() {
     if (!img) return
 
     const iRect = img.getBoundingClientRect()
-    const relX = (e.clientX - iRect.left) / iRect.width
-    const relY = (e.clientY - iRect.top) / iRect.height
+    const cRect = getContainedImageRectPx(img, iRect)
+
+    const relX = (e.clientX - cRect.left) / cRect.width
+    const relY = (e.clientY - cRect.top) / cRect.height
 
     if (relX < 0 || relX > 1 || relY < 0 || relY > 1) return
 
