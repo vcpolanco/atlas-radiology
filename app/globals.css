@@ -33,6 +33,7 @@ body {
 }
 
 body {
+  min-height: 0;
   overflow: hidden; /* evita la barra vertical de la página */
 }
 

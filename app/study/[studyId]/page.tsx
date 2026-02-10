@@ -2,15 +2,27 @@
 
 /* =====================================================
    [1] IMPORTS
-   ===================================================== */
+===================================================== */
+
+import { getStudyById } from '@/lib/atlas/studies'
+
 import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { useParams, useSearchParams } from 'next/navigation'
 
 import { downloadJson } from '@/lib/atlas/downloadJson'
-import { TORAX_TC_LABELS_ES } from '@/lib/atlas/labels/torax_tc_es'
 
-import { getStudyById } from '@/lib/atlas/studies'
+import { 
+  getProfileById, 
+  getStructureColor, 
+  getStructureLabel, 
+  getCategoryColor,
+ } from "@/lib/anatomy/resolve"
+
 import { buildSliceUrl } from '@/lib/atlas/loader'
+
+
+
+
 /* END [1] IMPORTS */
 
 
@@ -37,6 +49,7 @@ type Rect = {
 /* [2.4] Callouts (layout items) */
 type CalloutItem = {
   idx: number
+  structureId: string
   x: number
   y: number
   px: number
@@ -45,10 +58,20 @@ type CalloutItem = {
   label: string
 }
 
+
 type CalloutPlaced = CalloutItem & {
   endX: number
   endY: number
 }
+
+type UIStructure = {
+  id: string
+  label: string
+  side?: "L" | "R" | "M"
+  category?: string
+}
+
+
 /* END [2] TYPES */
 
 
@@ -59,9 +82,38 @@ export default function Page() {
   /* =====================================================
      [3.1] PARAMS & STUDY
      ===================================================== */
+ 
   const { studyId } = useParams<{ studyId: string }>()
+
   const study = useMemo(() => getStudyById(studyId), [studyId])
+
+  const anatomyProfile = useMemo(
+    () => getProfileById(study?.anatomyProfileId),
+    [study?.anatomyProfileId]
+  )
+
+  const uiStructures = useMemo<UIStructure[]>(() => {
+   if (Array.isArray(anatomyProfile) && anatomyProfile.length) {
+    return anatomyProfile.map((s) => ({
+      id: s.id,
+      label: (s as any).labelEs ?? (s as any).label ?? s.id,
+      side: (s as any).side,
+      category: (s as any).category,
+    }))
+  }
+
+  // fallback: lo viejo
+  return (study?.structures ?? []).map((s) => ({
+    id: s.id,
+    label: s.label,
+    side: s.side,
+    category: (s as any).category,
+  }))
+}, [anatomyProfile, study])
+
+
   const TOTAL_SLICES = study?.slicesCount ?? 0
+ 
   /* END [3.1] PARAMS & STUDY */
 
 
@@ -88,9 +140,11 @@ export default function Page() {
   /* =====================================================
      [3.4] STATE :: ANNOTATIONS / AUTHOR
      ===================================================== */
-  const [activeStructure, setActiveStructure] = useState<string>('aorta')
+  const [activeStructure, setActiveStructure] = useState<string>('')
   const [annotationsBySlice, setAnnotationsBySlice] = useState<AnnotationsBySlice>({})
+  
   const [lastLoadedFile, setLastLoadedFile] = useState('')
+
 
   /* [3.4.x] STATE :: CALLOUTS GEOMETRY */
   const [geom, setGeom] = useState<{ v: Rect; i: Rect } | null>(null)
@@ -103,12 +157,16 @@ export default function Page() {
      ===================================================== */
   const viewerRef = useRef<HTMLDivElement | null>(null)
   const imgRef = useRef<HTMLImageElement | null>(null)
-  const fileInputRef = useRef<HTMLInputElement | null>(null)
-
-  const touchStartYRef = useRef<number | null>(null)
-  const touchLastTriggerYRef = useRef<number | null>(null)
-
+  
   const preloadedRef = useRef<Set<string>>(new Set())
+
+const touchStartYRef = useRef<number | null>(null)
+const touchStartXRef = useRef<number | null>(null)
+const touchLastStepYRef = useRef<number | null>(null)
+const touchIsSwipingRef = useRef(false)
+
+
+
   /* END [3.5] REFS :: DOM + TOUCH + PRELOAD */
 
 
@@ -120,7 +178,49 @@ export default function Page() {
     return buildSliceUrl(study, slice)
   }, [study, slice])
 
-  const annotations = annotationsBySlice[String(slice)] ?? []
+  const annotations = useMemo(
+    () => annotationsBySlice[String(slice)] ?? [],
+    [annotationsBySlice, slice]
+  )
+
+  const callouts: CalloutPlaced[] = useMemo(() => {
+  const g = geom
+  if (!g) return []
+  if (!study) return []
+  if (!annotations.length) return []
+  
+  const MIN_GAP_PX = 26
+
+  const items: CalloutItem[] = annotations.map((a, idx) => {
+    const label =
+      getStructureLabel(anatomyProfile, a.structureId) ??
+      a.structureId
+      
+    const px = g.i.left - g.v.left + a.x * g.i.width
+    const py = g.i.top - g.v.top + a.y * g.i.height
+
+    return {
+      idx,
+      structureId: a.structureId,
+      x: a.x,
+      y: a.y,
+      px,
+      py,
+      isLeft: a.x < 0.5,
+      label,
+    }
+  })
+
+  const placed = layoutCallouts(items, g.v.height, MIN_GAP_PX)
+
+  const COL_PAD = 12
+  return placed.map((p) => {
+    const endX = p.isLeft ? COL_PAD : Math.max(COL_PAD, g.v.width - COL_PAD)
+    return { ...p, endX, endY: p.endY }
+  })
+}, [geom, annotations, study, anatomyProfile]) 
+
+
   /* END [3.6] MEMOS :: DERIVED */
 
 
@@ -152,9 +252,7 @@ export default function Page() {
   /* =====================================================
      [3.6.x] HELPERS :: labels
      ===================================================== */
-  const structureLabel = (structureId: string) =>
-    TORAX_TC_LABELS_ES[structureId] ?? structureId
-
+  
   const KEY_SLICE_LABELS_ES: Record<number, string> = {
     14: 'Arco aórtico',
     21: 'Carina',
@@ -335,10 +433,10 @@ export default function Page() {
      [3.12] EFFECT :: reset defaults on study change
      ===================================================== */
   useEffect(() => {
-    if (!study?.structures?.length) return
-    setActiveStructure(study.structures[0].id)
+    if (!uiStructures.length) return
+    setActiveStructure(uiStructures[0].id)
     setSlice(0)
-  }, [studyId, study])
+  }, [studyId, uiStructures])
   /* END [3.12] EFFECT :: reset defaults */
 
 
@@ -354,14 +452,12 @@ export default function Page() {
     const raw = localStorage.getItem(storageKey)
     if (!raw) {
       setAnnotationsBySlice({})
-      setLastLoadedFile('')
       return
     }
 
     const parsed = safeParseAnnotations(raw)
     if (!parsed) {
       setAnnotationsBySlice({})
-      setLastLoadedFile('')
       return
     }
 
@@ -456,6 +552,84 @@ export default function Page() {
   /* END [3.18] HANDLER :: wheel slice navigation */
 
 
+
+  /* =====================================================
+     [3.19] funcion para hacer swipe en el celu y avanzar
+     ===================================================== */
+
+     function clampSlice(next: number) {
+  return Math.min(TOTAL_SLICES - 1, Math.max(0, next))
+}
+
+function stepSlice(delta: number) {
+  if (TOTAL_SLICES <= 0) return
+  setSlice((prev) => clampSlice(prev + delta))
+}
+
+function onTouchStart(e: React.TouchEvent<HTMLDivElement>) {
+  if (!isMobile) return
+  if (e.touches.length !== 1) return
+
+  const t = e.touches[0]
+  touchStartYRef.current = t.clientY
+  touchStartXRef.current = t.clientX
+  touchLastStepYRef.current = t.clientY
+  touchIsSwipingRef.current = false
+}
+
+function onTouchMove(e: React.TouchEvent<HTMLDivElement>) {
+  if (!isMobile) return
+  if (e.touches.length !== 1) return
+  if (TOTAL_SLICES <= 0) return
+
+  const t = e.touches[0]
+  const startY = touchStartYRef.current
+  const startX = touchStartXRef.current
+  const lastY = touchLastStepYRef.current
+
+  if (startY == null || startX == null || lastY == null) return
+
+  const dyTotal = t.clientY - startY
+  const dxTotal = t.clientX - startX
+
+  // Si el gesto es más horizontal que vertical, no lo tomamos como swipe de slices
+  if (Math.abs(dxTotal) > Math.abs(dyTotal) && Math.abs(dxTotal) > 10) {
+    return
+  }
+
+  // Umbral para considerar "swipe" y no "tap"
+  const SWIPE_START_PX = 10
+  if (!touchIsSwipingRef.current && Math.abs(dyTotal) > SWIPE_START_PX) {
+    touchIsSwipingRef.current = true
+  }
+
+  // Paso por umbral: cada 24px cambia 1 slice
+  const STEP_PX = 24
+  const dyStep = t.clientY - lastY
+
+  if (Math.abs(dyStep) >= STEP_PX) {
+    // dyStep > 0 => dedo baja => slice anterior (avanzar)
+    // dyStep < 0 => dedo sube => slice siguiente (retroceder)
+    stepSlice(dyStep > 0 ? +1 : -1)
+
+    // Recalibrar el "last step" para permitir múltiples pasos en un solo swipe
+    touchLastStepYRef.current = t.clientY
+    // Evitar scroll del navegador mientras swippeás dentro del viewer
+    e.preventDefault()
+  }
+}
+
+function onTouchEnd() {
+  if (!isMobile) return
+  touchStartYRef.current = null
+  touchStartXRef.current = null
+  touchLastStepYRef.current = null
+  // dejá touchIsSwipingRef.current como está; lo usamos para bloquear tap en author
+}
+
+
+
+
   /* =====================================================
      [3.20] fx :: upsertAnnotationAtSlice (AUTHOR)
      ===================================================== */
@@ -491,6 +665,12 @@ export default function Page() {
 
     const img = imgRef.current
     if (!img) return
+
+    // si el último gesto fue swipe, no marcar punto
+    if (touchIsSwipingRef.current) {
+    touchIsSwipingRef.current = false
+    return
+    }
 
     const iRect = img.getBoundingClientRect()
     const cRect = getContainedImageRectPx(img, iRect)
@@ -585,45 +765,6 @@ export default function Page() {
 
 
   /* =====================================================
-     [3.25] MEMO :: callouts (px + layout)
-     ===================================================== */
-  const callouts: CalloutPlaced[] = useMemo(() => {
-    if (!geom) return []
-    if (!annotations.length) return []
-
-    const MIN_GAP_PX = 26
-
-    const items: CalloutItem[] = annotations.map((a, idx) => {
-      const s = study.structures.find((it) => it.id === a.structureId)
-
-      const label = s?.label ?? structureLabel (a.structureId)
-
-      const px = geom.i.left - geom.v.left + a.x * geom.i.width
-      const py = geom.i.top - geom.v.top + a.y * geom.i.height
-
-      return {
-        idx,
-        x: a.x,
-        y: a.y,
-        px,
-        py,
-        isLeft: a.x < 0.5,
-        label,
-      }
-    })
-
-    const placed = layoutCallouts(items, geom.v.height, MIN_GAP_PX)
-
-    const COL_PAD = 12
-    return placed.map((p) => {
-      const endX = p.isLeft ? COL_PAD : Math.max(COL_PAD, geom.v.width - COL_PAD)
-      return { ...p, endX, endY: p.endY }
-    })
-  }, [geom, study, annotations]) // eslint-disable-line react-hooks/exhaustive-deps
-  /* END [3.25] MEMO :: callouts (px + layout) */
-
-
-  /* =====================================================
      [3.26] STYLE HELPERS
      ===================================================== */
   const SIDEBAR_W_DESKTOP = 320
@@ -660,16 +801,16 @@ export default function Page() {
     maxWidth: isMobile ? 160 : 260,
   }
 
-  const calloutDotStyle: React.CSSProperties = {
-    width: isMobile ? 7 : 10,
-    height: isMobile ? 7 : 10,
+    const calloutDotStyle = (structureId: string): React.CSSProperties => ({
+    width: isMobile ? 3 : 5,
+    height: isMobile ? 3 : 5,
     borderRadius: 999,
-    background: '#22c55e',
+    background: getStructureColor(anatomyProfile, structureId),
     border: isMobile
-      ? '1.5px solid rgba(0,0,0,0.6)'
-      : '2px solid rgba(0,0,0,0.6)',
-    boxShadow: '0 2px 8px rgba(0,0,0,0.45)',
-  }
+      ? '1px solid rgba(0,0,0,0.6)'
+      : '1.5px solid rgba(0,0,0,0.6)',
+    boxShadow: '0 1px 4px rgba(0,0,0,0.45)',
+  })
 
   const sidePanelStyle: React.CSSProperties = {
     flex: '0 0 auto',
@@ -750,6 +891,9 @@ export default function Page() {
         ref={viewerRef}
         onWheel={onWheel}
         onClick={isAuthor ? addPointAtClick : undefined}
+        onTouchStart={onTouchStart}
+        onTouchMove={onTouchMove}
+        onTouchEnd={onTouchEnd}
         className="viewer"
       >
         {/* [3.30.2.1] Viewer :: toggle sidebar   POR AHORA SILENCIADO */}
@@ -779,6 +923,34 @@ export default function Page() {
         )}
 
 
+{/* leyenda por categoria dentro del main */}
+<div
+  style={{
+    position: "absolute",
+    top: 44,
+    right: 10,
+    zIndex: 9999,
+    background: "rgba(0,0,0,0.35)",
+    border: "1px solid rgba(255,255,255,0.12)",
+    borderRadius: 10,
+    padding: "6px 8px",
+    color: "white",
+    fontSize: 12,
+    display: "flex",
+    gap: 10,
+    alignItems: "center",
+  }}
+>
+  {(["airway","artery","vein","organ"] as const).map((cat) => (
+    <span key={cat} style={{ display: "inline-flex", gap: 6, alignItems: "center" }}>
+      <span style={{ width: 10, height: 10, borderRadius: 999, background: getCategoryColor(cat) }} />
+      {cat}
+    </span>
+  ))}
+</div>
+
+
+
         {/* [3.30.2.2] Viewer :: slice counter */}
         <div
           style={{
@@ -800,6 +972,9 @@ export default function Page() {
 
         {/* [3.30.2.3] Viewer :: image */}
         <img ref={imgRef} src={imageUrl} alt="CT" draggable={false} className="viewerImg" />
+
+
+
 
         {/* =====================================================
            [3.30.2.4] Viewer :: callouts
@@ -824,7 +999,7 @@ export default function Page() {
                   y1={c.py}
                   x2={c.endX}
                   y2={c.endY}
-                  stroke="rgba(255,255,255,0.75)"
+                  stroke={getStructureColor(anatomyProfile, c.structureId)}
                   strokeWidth="2"
                 />
               ))}
@@ -841,7 +1016,7 @@ export default function Page() {
                   transform: 'translate(-50%, -50%)',
                   zIndex: 8500,
                   pointerEvents: 'none',
-                  ...calloutDotStyle,
+                  ...calloutDotStyle(c.structureId),
                 }}
               />
             ))}
@@ -973,7 +1148,7 @@ export default function Page() {
                 outline: 'none',
               }}
             >
-              {study.structures.map((s) => (
+              {uiStructures.map((s) => (
                 <option key={s.id} value={s.id}>
                   {s.label}
                 </option>
@@ -996,9 +1171,17 @@ export default function Page() {
                 Exportar annotations.json
               </button>
 
+
+
               <div style={{ fontSize: 12, opacity: 0.8, marginTop: 6 }}>
                 Pegalo en public/studies/{study.id}/annotations.json
               </div>
+
+<div style={{ fontSize: 12, opacity: 0.75, marginTop: 8 }}>
+  Fuente: {lastLoadedFile || '—'}
+</div>
+
+
             </div>
 
             {/* Nota: deleteAnnotationAt está disponible si querés habilitar borrado por click derecho más adelante */}
@@ -1016,7 +1199,7 @@ export default function Page() {
         /* [3.30.3] LAYOUT :: root                               */
         /* ===================================================== */
         .appRoot {
-          height: 100%;
+          height: 100vh;
           display: flex;
           flex-direction: row;
           background: #000;
@@ -1084,6 +1267,7 @@ export default function Page() {
           align-items: center;
           justify-content: center;
           background: #000;
+          touch-action: none;
         }
 
         .viewerImg {

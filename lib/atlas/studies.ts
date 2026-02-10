@@ -1,5 +1,7 @@
 import type { Study } from "./types"
 
+import { THORAX_CT_CORE } from '@/lib/anatomy/profiles/thorax_ct_core'
+
 // =====================================================
 // [S] STUDIES :: REGISTRY (Atlas studies list)
 // Estudios :: Registro (lista de estudios)
@@ -33,14 +35,13 @@ export const STUDIES: Study[] = [
     // STRUCTURES :: Thorax (with side L/R/M)
     // ESTRUCTURAS :: Tórax (con lado I/D/M)
     // =====================================================
-    structures: [
-      { id: "aorta", label: "Aorta", side: "M" },
-      { id: "trachea", label: "Tráquea", side: "M" },
-      { id: "esophagus", label: "Esófago", side: "M" },
-      { id: "svc", label: "Vena cava superior", side: "R" },
-      { id: "pulmonary_artery", label: "Arteria pulmonar", side: "M" },
-      { id: "azygos", label: "Vena ácigos", side: "R" },
-    ],
+    structures: THORAX_CT_CORE.map((s) => ({
+      id: s.id,
+      label: s.labelEs ?? s.label ?? s.id,
+      side: s.side,
+      category: s.category,
+    })),
+
     // END SECTION :: STRUCTURES :: Thorax (with side)
     // Fin sección :: Estructuras :: Tórax (con lado)
   },

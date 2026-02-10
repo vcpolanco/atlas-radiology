@@ -1,3 +1,5 @@
+import type { AnatomyCategory } from '@/lib/anatomy/types'
+
 // =====================================================
 // TYPES :: Annotations
 // TIPOS :: Anotaciones
@@ -7,7 +9,7 @@ export type Annotation = { structureId: string; x: number; y: number }
 // Record<sliceIndex, Annotation[]>
 // sliceIndex is 0-based (0 -> slice001.jpg)
 // sliceIndex es 0-based (0 -> slice001.jpg)
-export type SliceAnnotations = Record<number, Annotation[]>
+export type SliceAnnotations = Record<string, Annotation[]>
 // END SECTION :: TYPES :: Annotations
 // Fin sección :: Tipos :: Anotaciones
 
@@ -44,6 +46,7 @@ export type Structure = {
   id: string
   label: string
   side?: Side // optional / opcional
+  category?: AnatomyCategory
 }
 // END SECTION :: TYPES :: Structure
 // Fin sección :: Tipos :: Estructura
@@ -58,15 +61,19 @@ export type Study = {
   id: string
   title: string
   basePath: string
+
+  // Perfil anatómico asociado (lib/anatomy)
+  anatomyProfileId?: string
+  
   slicesCount: number
   slicesExt: string
-  sliceName: { prefix?: string; pad: number }
+  sliceName: { prefix: string; pad: number }
   
   // KEY SLICES (named navigation points)
   // CORTES CLAVE (puntos de navegación con nombre)
   keySlices?: KeySlice[]
 
-  structures: Structure[]
+  structures?: Structure[]
 
   // OPTIONAL (read-only loads from /annotations.json)
   // OPCIONAL (solo lectura: se carga desde /annotations.json)
