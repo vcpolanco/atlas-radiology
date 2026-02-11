@@ -1,16 +1,17 @@
-import type { AnatomyCategory } from "../types"
+import type { AnatomyCategory, AnatomyStructure } from "../types"
 
 // =====================================================
 // [A.2] ANATOMY :: thorax structures (canonical)
 // =====================================================
-export type AnatomySide = 'L' | 'R' | 'M'
+// Notes:
+// - IDs cortos y estables (svc, azygos, trachea, etc.)
+// - category usa AnatomyCategory (airway/artery/vein/organ/...)
+// - labelEs es el texto principal para UI en español
+// =====================================================
 
-export type ThoraxStructure = {
-  id: string
-  label: string
-  labelEs?: string
+export type ThoraxStructure = AnatomyStructure & {
+  labelEs: string
   side?: "L" | "R" | "M"
-  category: AnatomyCategory
 }
 
 export const THORAX_STRUCTURES: Record<string, ThoraxStructure> = {
@@ -55,5 +56,6 @@ export const THORAX_STRUCTURES: Record<string, ThoraxStructure> = {
     labelEs: "Vena ácigos",
     category: "vein",
   },
-}
+} as const
+
 // END SECTION :: [A.2] ANATOMY :: thorax structures
