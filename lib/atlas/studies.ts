@@ -1,6 +1,6 @@
 import type { Study } from "./types"
 
-import { THORAX_CT_CORE } from '@/lib/anatomy/profiles/thorax_ct_core'
+import { THORAX_CT_PUBLIC } from '@/lib/anatomy/profiles/thorax_ct_public'
 
 // =====================================================
 // [S] STUDIES :: REGISTRY (Atlas studies list)
@@ -35,7 +35,7 @@ export const STUDIES: Study[] = [
     // STRUCTURES :: Thorax (with side L/R/M)
     // ESTRUCTURAS :: Tórax (con lado I/D/M)
     // =====================================================
-    structures: THORAX_CT_CORE.map((s) => ({
+    structures: THORAX_CT_PUBLIC.map((s) => ({
       id: s.id,
       label: s.labelEs ?? s.label ?? s.id,
       side: s.side,

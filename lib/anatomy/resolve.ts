@@ -1,9 +1,9 @@
 import { ANATOMY_PROFILES } from "./profiles"
-import { ANATOMY_PROFILE_REGISTRY, type AnatomyProfileId } from "./registry"
+import { ANATOMY_PROFILE_MAP, type AnatomyProfileId } from "./registry"
 
 export function getProfileById(profileId?: string) {
   if (!profileId) return null
-  return (ANATOMY_PROFILE_REGISTRY as any)[profileId] ?? null
+  return ANATOMY_PROFILE_MAP[profileId as AnatomyProfileId] ?? null
 }
 
 export function getStructureFromProfile(profile: readonly any[] | null, structureId: string) {
