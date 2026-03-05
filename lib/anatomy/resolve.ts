@@ -10,9 +10,26 @@ export function getStructureFromProfile(profile: readonly any[] | null, structur
   return profile?.find((s) => s?.id === structureId) ?? null
 }
 
-export function getStructureColor(profile: readonly any[] | null, structureId: string, fallback = "#22c55e") {
+export function getStructureColor(
+  profile: readonly any[] | null,
+  structureId: string,
+  fallback = "#999"
+) {
   const s = getStructureFromProfile(profile, structureId)
-  const cat = s?.category
+  const raw = String(s?.category ?? "").trim().toLowerCase()
+
+  // normalización (por si te llega "Vascular", "arteria", etc.)
+  const cat =
+    raw === "airway" || raw === "via aerea" || raw === "vía aérea" || raw === "vía aerea"
+      ? "airway"
+      : raw === "artery" || raw === "arteria"
+      ? "artery"
+      : raw === "vein" || raw === "vena"
+      ? "vein"
+      : raw === "organ" || raw === "organo" || raw === "órgano"
+      ? "organ"
+      : null
+
   return cat ? (ANATOMY_PROFILES as any)[cat]?.color ?? fallback : fallback
 }
 
@@ -23,9 +40,19 @@ export function getStructureLabel(profile: readonly any[] | null, structureId: s
 
 
 // crear el get cateogry color 
-export function getCategoryColor(
-  category: keyof typeof ANATOMY_PROFILES,
-  fallback = "#999"
-) {
-  return ANATOMY_PROFILES[category]?.color ?? fallback
+export function getCategoryColor(category: string, fallback = "#999") {
+  const raw = String(category ?? "").trim().toLowerCase()
+
+  const cat =
+    raw === "airway" || raw === "via aerea" || raw === "vía aérea" || raw === "vía aerea"
+      ? "airway"
+      : raw === "artery" || raw === "arteria"
+      ? "artery"
+      : raw === "vein" || raw === "vena"
+      ? "vein"
+      : raw === "organ" || raw === "organo" || raw === "órgano"
+      ? "organ"
+      : null
+
+  return cat ? (ANATOMY_PROFILES as any)[cat]?.color ?? fallback : fallback
 }

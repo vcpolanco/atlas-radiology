@@ -5,6 +5,8 @@
 ===================================================== */
 
 import { getStudyById } from '@/lib/atlas/studies'
+import { StructurePicker } from "@/lib/atlas/components/StructurePicker"
+
 
 import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { useParams, useSearchParams } from 'next/navigation'
@@ -20,7 +22,7 @@ import {
 
 import { buildSliceUrl } from '@/lib/atlas/loader'
 
-
+import { CATEGORY_COLORS, CATEGORY_LABELS } from "@/lib/anatomy/profiles/palette"
 
 
 /* END [1] IMPORTS */
@@ -83,9 +85,31 @@ export default function Page() {
      [3.1] PARAMS & STUDY
      ===================================================== */
  
+     
   const { studyId } = useParams<{ studyId: string }>()
 
   const study = useMemo(() => getStudyById(studyId), [studyId])
+
+  const [selectedStructureId, setSelectedStructureId] = useState<string>("")
+
+useEffect(() => {
+  try {
+    const saved = localStorage.getItem(`anatoslice:lastStructure:${study?.id}`)
+    if (saved) setSelectedStructureId(saved)
+  } catch {}
+}, [study?.id])
+
+useEffect(() => {
+  try {
+    if (selectedStructureId && study?.id) {
+      localStorage.setItem(
+        `anatoslice:lastStructure:${study.id}`,
+        selectedStructureId
+      )
+    }
+  } catch {}
+}, [selectedStructureId, study?.id])
+
 
   const anatomyProfile = useMemo(
     () => getProfileById(study?.anatomyProfileId),
@@ -117,6 +141,7 @@ export default function Page() {
   /* END [3.1] PARAMS & STUDY */
 
 
+
   /* =====================================================
      [3.2] MODE :: AUTHOR (?author=1)
      ===================================================== */
@@ -129,7 +154,11 @@ export default function Page() {
      [3.3] STATE :: CORE UI
      ===================================================== */
   const [slice, setSlice] = useState(0)
-  const [labelsOn, setLabelsOn] = useState(true)
+const [labelFilters, setLabelFilters] = useState({
+  airway: true,
+  vascular: true, // artery + vein
+  organ: true,
+})
 
   const [sidebarOpen, setSidebarOpen] = useState(true)
   const [isMobile, setIsMobile] = useState(false)
@@ -170,32 +199,59 @@ const touchIsSwipingRef = useRef(false)
   /* END [3.5] REFS :: DOM + TOUCH + PRELOAD */
 
 
-  /* =====================================================
-     [3.6] MEMOS :: DERIVED
-     ===================================================== */
-  const imageUrl = useMemo(() => {
-    if (!study) return ''
-    return buildSliceUrl(study, slice)
-  }, [study, slice])
+ /* =====================================================
+   [3.6] MEMOS :: DERIVED
+   ===================================================== */
+const imageUrl = useMemo(() => {
+  if (!study) return ''
+  return buildSliceUrl(study, slice)
+}, [study, slice])
 
-  const annotations = useMemo(
-    () => annotationsBySlice[String(slice)] ?? [],
-    [annotationsBySlice, slice]
-  )
+const labelById = useMemo(() => {
+  const m = new Map<string, string>()
+  for (const s of uiStructures) {
+    if (s?.id && s?.label) m.set(s.id, s.label)
+  }
+  return m
+}, [uiStructures])
 
-  const callouts: CalloutPlaced[] = useMemo(() => {
+const categoryById = useMemo(() => {
+  const m = new Map<string, string>()
+  for (const s of uiStructures) {
+    if (s?.id && s?.category) m.set(s.id, String(s.category))
+  }
+  return m
+}, [uiStructures])
+
+function isStructureVisible(structureId: string) {
+  const raw = (categoryById.get(structureId) ?? "").trim().toLowerCase()
+
+  if (raw === "airway") return labelFilters.airway
+  if (raw === "artery" || raw === "vein") return labelFilters.vascular
+  if (raw === "organ") return labelFilters.organ
+
+  return true
+}
+
+const annotations = useMemo(() => {
+  const arr = annotationsBySlice[String(slice)] ?? []
+  return arr.filter((a) => isStructureVisible(a.structureId))
+}, [annotationsBySlice, slice, labelFilters, categoryById])
+
+const callouts: CalloutPlaced[] = useMemo(() => {
   const g = geom
   if (!g) return []
   if (!study) return []
   if (!annotations.length) return []
-  
+
   const MIN_GAP_PX = 26
 
   const items: CalloutItem[] = annotations.map((a, idx) => {
     const label =
+      labelById.get(a.structureId) ??
       getStructureLabel(anatomyProfile, a.structureId) ??
       a.structureId
-      
+
     const px = g.i.left - g.v.left + a.x * g.i.width
     const py = g.i.top - g.v.top + a.y * g.i.height
 
@@ -218,10 +274,20 @@ const touchIsSwipingRef = useRef(false)
     const endX = p.isLeft ? COL_PAD : Math.max(COL_PAD, g.v.width - COL_PAD)
     return { ...p, endX, endY: p.endY }
   })
-}, [geom, annotations, study, anatomyProfile]) 
+}, [geom, annotations, study, anatomyProfile, labelById])
 
+function getColorForStructureId(structureId: string) {
+  const raw = (categoryById.get(structureId) ?? "").trim().toLowerCase()
 
-  /* END [3.6] MEMOS :: DERIVED */
+  if (raw === "airway") return CATEGORY_COLORS.airway
+  if (raw === "artery") return CATEGORY_COLORS.artery
+  if (raw === "vein") return CATEGORY_COLORS.vein
+  if (raw === "organ") return CATEGORY_COLORS.organ
+
+  // fallback si la estructura no tiene categoría
+  return "#999"
+}
+/* END [3.6] MEMOS :: DERIVED */
 
 
   /* =====================================================
@@ -432,11 +498,16 @@ const touchIsSwipingRef = useRef(false)
   /* =====================================================
      [3.12] EFFECT :: reset defaults on study change
      ===================================================== */
-  useEffect(() => {
-    if (!uiStructures.length) return
-    setActiveStructure(uiStructures[0].id)
-    setSlice(0)
-  }, [studyId, uiStructures])
+useEffect(() => {
+  if (!uiStructures.length) return
+
+  const saved = selectedStructureId
+  const exists = saved && uiStructures.some((s) => s.id === saved)
+
+  setActiveStructure(exists ? saved : uiStructures[0].id)
+  setSlice(0)
+}, [studyId, uiStructures, selectedStructureId])
+
   /* END [3.12] EFFECT :: reset defaults */
 
 
@@ -527,6 +598,13 @@ const touchIsSwipingRef = useRef(false)
     }
   }, [study, isAuthor]) // eslint-disable-line react-hooks/exhaustive-deps
   /* END [3.14] EFFECT :: load curated annotations.json */
+
+// Sync: cuando selectedStructureId cambia, lo usamos como activeStructure
+useEffect(() => {
+  if (!selectedStructureId) return
+  setActiveStructure(selectedStructureId)
+}, [selectedStructureId])
+
 
 
   /* =====================================================
@@ -680,7 +758,12 @@ function onTouchEnd() {
 
     if (relX < 0 || relX > 1 || relY < 0 || relY > 1) return
 
-    const ann: Annotation = { structureId: activeStructure, x: relX, y: relY }
+    const sid = selectedStructureId || activeStructure
+if (!sid) return // no marcar si no hay estructura elegida
+
+const ann: Annotation = { structureId: sid, x: relX, y: relY }
+
+    
     upsertAnnotationAtSlice(slice, ann)
   }
   /* END [3.22] HANDLER :: addPointAtClick (AUTHOR) */
@@ -718,6 +801,22 @@ function onTouchEnd() {
     downloadJson(payload, 'annotations.json')
   }
   /* END [3.23] HANDLER :: exportAnnotationsJson (AUTHOR) */
+
+/* =====================================================
+   [3.25] HANDLER :: clearAllAnnotations (AUTHOR)
+   ===================================================== */
+function clearAllAnnotations() {
+  if (!isAuthor) return
+
+  const ok = window.confirm(
+    "Esto va a borrar TODAS las anotaciones (todas las slices) para rehacer desde cero. ¿Continuar?"
+  )
+  if (!ok) return
+
+  setAnnotationsBySlice({})
+  setLastLoadedFile("— (cleared)")
+}
+/* END [3.25] HANDLER :: clearAllAnnotations (AUTHOR) */
 
 
   /* =====================================================
@@ -805,7 +904,7 @@ function onTouchEnd() {
     width: isMobile ? 3 : 5,
     height: isMobile ? 3 : 5,
     borderRadius: 999,
-    background: getStructureColor(anatomyProfile, structureId),
+    background: getColorForStructureId(structureId),
     border: isMobile
       ? '1px solid rgba(0,0,0,0.6)'
       : '1.5px solid rgba(0,0,0,0.6)',
@@ -941,12 +1040,20 @@ function onTouchEnd() {
     alignItems: "center",
   }}
 >
-  {(["airway","artery","vein","organ"] as const).map((cat) => (
-    <span key={cat} style={{ display: "inline-flex", gap: 6, alignItems: "center" }}>
-      <span style={{ width: 10, height: 10, borderRadius: 999, background: getCategoryColor(cat) }} />
-      {cat}
-    </span>
-  ))}
+  {(["airway", "artery", "vein", "organ"] as const).map((cat) => (
+  <span key={cat} style={{ display: "inline-flex", gap: 6, alignItems: "center" }}>
+    <span
+      style={{
+        width: 10,
+        height: 10,
+        borderRadius: 999,
+        background: CATEGORY_COLORS[cat],
+      }}
+    />
+    {CATEGORY_LABELS[cat]}
+  </span>
+))}
+
 </div>
 
 
@@ -999,7 +1106,7 @@ function onTouchEnd() {
                   y1={c.py}
                   x2={c.endX}
                   y2={c.endY}
-                  stroke={getStructureColor(anatomyProfile, c.structureId)}
+                  stroke={getColorForStructureId(c.structureId)}
                   strokeWidth="2"
                 />
               ))}
@@ -1007,63 +1114,128 @@ function onTouchEnd() {
 
             {/* [3.30.2.4.2] dots */}
             {callouts.map((c) => (
-              <div
-                key={`pt-${c.idx}`}
-                style={{
-                  position: 'absolute',
-                  left: c.px,
-                  top: c.py,
-                  transform: 'translate(-50%, -50%)',
-                  zIndex: 8500,
-                  pointerEvents: 'none',
-                  ...calloutDotStyle(c.structureId),
-                }}
-              />
-            ))}
+  <div
+    key={`pt-${c.idx}`}
+    onContextMenu={(e) => {
+      // Click derecho => borrar puntual (solo author)
+      if (!isAuthor) return
+      e.preventDefault()
+      e.stopPropagation()
+      deleteAnnotationAt(slice, c.idx)
+    }}
+    style={{
+      position: 'absolute',
+      left: c.px,
+      top: c.py,
+      transform: 'translate(-50%, -50%)',
+      zIndex: 8500,
+
+      // Importante: antes estaba 'none' y no capturaba eventos.
+      // Así el click derecho funciona.
+      pointerEvents: isAuthor ? 'auto' : 'none',
+
+      // Un poco más "fácil de agarrar" con el mouse:
+      width: isMobile ? 16 : 18,
+      height: isMobile ? 16 : 18,
+      borderRadius: 999,
+      display: 'grid',
+      placeItems: 'center',
+      background: 'transparent',
+      cursor: isAuthor ? 'context-menu' : 'default',
+    }}
+    title={isAuthor ? 'Click derecho: borrar punto' : undefined}
+  >
+    {/* dot visual real */}
+    <div
+      style={{
+        ...calloutDotStyle(c.structureId),
+      }}
+    />
+  </div>
+))}
 
             {/* [3.30.2.4.3] labels */}
-            {labelsOn &&
-              callouts.map((c) => (
-                <div
-                  key={`lb-${c.idx}`}
-                  style={{
-                    position: 'absolute',
-                    top: c.endY,
-                    zIndex: 9000,
-                    ...calloutLabelStyle,
-                    left: c.isLeft ? c.endX : undefined,
-                    right: c.isLeft ? undefined : isMobile ? 8 : 12,
-                    textAlign: c.isLeft ? 'left' : 'right',
-                  }}
-                >
-                  {c.label}
-                </div>
-              ))}
+            {callouts.map((c) => (
+  <div
+    key={`lb-${c.idx}`}
+    style={{
+      position: 'absolute',
+      top: c.endY,
+      zIndex: 9000,
+      ...calloutLabelStyle,
+      left: c.isLeft ? c.endX : undefined,
+      right: c.isLeft ? undefined : isMobile ? 8 : 12,
+      textAlign: c.isLeft ? 'left' : 'right',
+    }}
+  >
+    {c.label}
+  </div>
+))}
           </>
         )}
         {/* END [3.30.2.4] Viewer :: callouts */}
 
         {/* [3.30.2.5] Viewer :: labels toggle */}
-        <button
-          onClick={(e) => {
-            e.stopPropagation()
-            setLabelsOn((v) => !v)
-          }}
-          style={{
-            position: 'absolute',
-            top: 10,
-            right: 10,
-            zIndex: 9999,
-            background: labelsOn ? '#16a34a' : '#444',
-            color: 'white',
-            border: 'none',
-            padding: '8px 10px',
-            borderRadius: 8,
-            cursor: 'pointer',
-          }}
-        >
-          Etiquetas: {labelsOn ? 'ON' : 'OFF'}
-        </button>
+        {/* [3.30.2.5] Viewer :: label filters */}
+<div
+  onClick={(e) => e.stopPropagation()}
+  style={{
+    position: 'absolute',
+    top: 10,
+    right: 10,
+    zIndex: 9999,
+    display: 'flex',
+    gap: 8,
+  }}
+>
+  <button
+    onClick={() => setLabelFilters((p) => ({ ...p, airway: !p.airway }))}
+    style={{
+      background: labelFilters.airway ? CATEGORY_COLORS.airway : '#444',
+      color: 'white',
+      border: 'none',
+      padding: '8px 10px',
+      borderRadius: 8,
+      cursor: 'pointer',
+    }}
+  >
+    Vía aérea
+  </button>
+
+  <button
+    onClick={() => setLabelFilters((p) => ({ ...p, vascular: !p.vascular }))}
+    style={{
+      background: labelFilters.vascular ? '#111' : '#444',
+      color: 'white',
+      border: 'none',
+      padding: '8px 10px',
+      borderRadius: 8,
+      cursor: 'pointer',
+      display: 'flex',
+      gap: 6,
+      alignItems: 'center',
+    }}
+  >
+    <span style={{ width: 10, height: 10, borderRadius: 999, background: CATEGORY_COLORS.artery }} />
+    <span style={{ width: 10, height: 10, borderRadius: 999, background: CATEGORY_COLORS.vein }} />
+    Vascular
+  </button>
+
+  <button
+    onClick={() => setLabelFilters((p) => ({ ...p, organ: !p.organ }))}
+    style={{
+      background: labelFilters.organ ? CATEGORY_COLORS.organ : '#444',
+      color: 'white',
+      border: 'none',
+      padding: '8px 10px',
+      borderRadius: 8,
+      cursor: 'pointer',
+    }}
+  >
+    Órganos
+  </button>
+</div>
+{/* END [3.30.2.5] Viewer :: label filters */}
 
         {/* [3.30.2.6] Viewer :: prev/next */}
         <button
@@ -1127,7 +1299,7 @@ function onTouchEnd() {
               borderRadius: 12,
               padding: 10,
               color: 'white',
-              width: 280,
+              width: 340,
             }}
             onClick={(e) => e.stopPropagation()}
           >
@@ -1135,54 +1307,58 @@ function onTouchEnd() {
               Active structure:
             </div>
 
-            <select
-              value={activeStructure}
-              onChange={(e) => setActiveStructure(e.target.value)}
-              style={{
-                width: '100%',
-                padding: '8px 10px',
-                borderRadius: 10,
-                border: '1px solid rgba(255,255,255,0.18)',
-                background: 'rgba(0,0,0,0.35)',
-                color: 'white',
-                outline: 'none',
-              }}
-            >
-              {uiStructures.map((s) => (
-                <option key={s.id} value={s.id}>
-                  {s.label}
-                </option>
-              ))}
-            </select>
-
-            <div style={{ marginTop: 10 }}>
-              <button
-                onClick={exportAnnotationsJson}
-                style={{
-                  width: '100%',
-                  padding: '8px 10px',
-                  cursor: 'pointer',
-                  borderRadius: 10,
-                  border: '1px solid rgba(255,255,255,0.18)',
-                  background: 'rgba(0,0,0,0.35)',
-                  color: 'white',
-                }}
-              >
-                Exportar annotations.json
-              </button>
-
-
-
-              <div style={{ fontSize: 12, opacity: 0.8, marginTop: 6 }}>
-                Pegalo en public/studies/{study.id}/annotations.json
-              </div>
-
-<div style={{ fontSize: 12, opacity: 0.75, marginTop: 8 }}>
-  Fuente: {lastLoadedFile || '—'}
+            <div style={{ marginBottom: 10, maxHeight: "60vh", overflow: "auto" }}>
+  <StructurePicker
+    structures={uiStructures as any}
+    selectedStructureId={selectedStructureId || activeStructure}
+    onSelect={(id) => {
+      setSelectedStructureId(id)  // guarda “última usada”
+      setActiveStructure(id)      // activa inmediatamente
+    }}
+  />
 </div>
 
 
-            </div>
+            <div style={{ marginTop: 10 }}>
+  <button
+    onClick={exportAnnotationsJson}
+    style={{
+      width: '100%',
+      padding: '8px 10px',
+      cursor: 'pointer',
+      borderRadius: 10,
+      border: '1px solid rgba(255,255,255,0.18)',
+      background: 'rgba(0,0,0,0.35)',
+      color: 'white',
+      marginBottom: 8,
+    }}
+  >
+    Exportar annotations.json
+  </button>
+
+  <button
+    onClick={clearAllAnnotations}
+    style={{
+      width: '100%',
+      padding: '8px 10px',
+      cursor: 'pointer',
+      borderRadius: 10,
+      border: '1px solid rgba(255,255,255,0.18)',
+      background: 'rgba(233, 39, 39, 0.22)', // rojo (artery)
+      color: 'white',
+    }}
+  >
+    Borrar todas las anotaciones
+  </button>
+
+  <div style={{ fontSize: 12, opacity: 0.8, marginTop: 6 }}>
+    Pegalo en public/studies/{study.id}/annotations.json
+  </div>
+
+  <div style={{ fontSize: 12, opacity: 0.75, marginTop: 8 }}>
+    Fuente: {lastLoadedFile || '—'}
+  </div>
+</div>
 
             {/* Nota: deleteAnnotationAt está disponible si querés habilitar borrado por click derecho más adelante */}
           </div>

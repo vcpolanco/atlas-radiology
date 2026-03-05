@@ -80,7 +80,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         {/* Content */}
           <div
           style={{
-          flex: 1,
+          height: "100%", 
           minHeight: 0,          // clave: permite que los hijos hagan overflow interno
           overflow: "hidden",    // evita scroll de la página
           }}
