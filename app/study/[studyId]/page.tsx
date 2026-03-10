@@ -156,7 +156,8 @@ useEffect(() => {
   const [slice, setSlice] = useState(0)
 const [labelFilters, setLabelFilters] = useState({
   airway: true,
-  vascular: true, // artery + vein
+  artery: true,
+  vein: true, 
   organ: true,
 })
 
@@ -227,7 +228,8 @@ function isStructureVisible(structureId: string) {
   const raw = (categoryById.get(structureId) ?? "").trim().toLowerCase()
 
   if (raw === "airway") return labelFilters.airway
-  if (raw === "artery" || raw === "vein") return labelFilters.vascular
+  if (raw === "artery") return labelFilters.artery
+  if (raw === "vein") return labelFilters.vein
   if (raw === "organ") return labelFilters.organ
 
   return true
@@ -1022,41 +1024,6 @@ function clearAllAnnotations() {
         )}
 
 
-{/* leyenda por categoria dentro del main */}
-<div
-  style={{
-    position: "absolute",
-    top: 44,
-    right: 10,
-    zIndex: 9999,
-    background: "rgba(0,0,0,0.35)",
-    border: "1px solid rgba(255,255,255,0.12)",
-    borderRadius: 10,
-    padding: "6px 8px",
-    color: "white",
-    fontSize: 12,
-    display: "flex",
-    gap: 10,
-    alignItems: "center",
-  }}
->
-  {(["airway", "artery", "vein", "organ"] as const).map((cat) => (
-  <span key={cat} style={{ display: "inline-flex", gap: 6, alignItems: "center" }}>
-    <span
-      style={{
-        width: 10,
-        height: 10,
-        borderRadius: 999,
-        background: CATEGORY_COLORS[cat],
-      }}
-    />
-    {CATEGORY_LABELS[cat]}
-  </span>
-))}
-
-</div>
-
-
 
         {/* [3.30.2.2] Viewer :: slice counter */}
         <div
@@ -1175,8 +1142,8 @@ function clearAllAnnotations() {
         )}
         {/* END [3.30.2.4] Viewer :: callouts */}
 
-        {/* [3.30.2.5] Viewer :: labels toggle */}
-        {/* [3.30.2.5] Viewer :: label filters */}
+
+{/* [3.30.2.5] Viewer :: label filters */}
 <div
   onClick={(e) => e.stopPropagation()}
   style={{
@@ -1185,57 +1152,128 @@ function clearAllAnnotations() {
     right: 10,
     zIndex: 9999,
     display: 'flex',
+    flexDirection: 'column',
     gap: 8,
   }}
 >
   <button
     onClick={() => setLabelFilters((p) => ({ ...p, airway: !p.airway }))}
     style={{
-      background: labelFilters.airway ? CATEGORY_COLORS.airway : '#444',
-      color: 'white',
-      border: 'none',
-      padding: '8px 10px',
-      borderRadius: 8,
+      display: 'flex',
+      alignItems: 'center',
+      gap: 8,
+      minWidth: 130,
+      padding: '8px 12px',
+      borderRadius: 10,
+      border: '1px solid #d1d5db',
+      background: labelFilters.airway ? '#ffffff' : '#e5e7eb',
+      color: '#111827',
       cursor: 'pointer',
+      fontWeight: 500,
+      textAlign: 'left',
     }}
   >
+    <span
+      style={{
+        width: 10,
+        height: 10,
+        borderRadius: 999,
+        background: CATEGORY_COLORS.airway,
+        flex: '0 0 auto',
+      }}
+    />
     Vía aérea
   </button>
 
   <button
-    onClick={() => setLabelFilters((p) => ({ ...p, vascular: !p.vascular }))}
+    onClick={() => setLabelFilters((p) => ({ ...p, artery: !p.artery }))}
     style={{
-      background: labelFilters.vascular ? '#111' : '#444',
-      color: 'white',
-      border: 'none',
-      padding: '8px 10px',
-      borderRadius: 8,
-      cursor: 'pointer',
       display: 'flex',
-      gap: 6,
       alignItems: 'center',
+      gap: 8,
+      minWidth: 130,
+      padding: '8px 12px',
+      borderRadius: 10,
+      border: '1px solid #d1d5db',
+      background: labelFilters.artery ? '#ffffff' : '#e5e7eb',
+      color: '#111827',
+      cursor: 'pointer',
+      fontWeight: 500,
+      textAlign: 'left',
     }}
   >
-    <span style={{ width: 10, height: 10, borderRadius: 999, background: CATEGORY_COLORS.artery }} />
-    <span style={{ width: 10, height: 10, borderRadius: 999, background: CATEGORY_COLORS.vein }} />
-    Vascular
+    <span
+      style={{
+        width: 10,
+        height: 10,
+        borderRadius: 999,
+        background: CATEGORY_COLORS.artery,
+        flex: '0 0 auto',
+      }}
+    />
+    Arterias
+  </button>
+
+  <button
+    onClick={() => setLabelFilters((p) => ({ ...p, vein: !p.vein }))}
+    style={{
+      display: 'flex',
+      alignItems: 'center',
+      gap: 8,
+      minWidth: 130,
+      padding: '8px 12px',
+      borderRadius: 10,
+      border: '1px solid #d1d5db',
+      background: labelFilters.vein ? '#ffffff' : '#e5e7eb',
+      color: '#111827',
+      cursor: 'pointer',
+      fontWeight: 500,
+      textAlign: 'left',
+    }}
+  >
+    <span
+      style={{
+        width: 10,
+        height: 10,
+        borderRadius: 999,
+        background: CATEGORY_COLORS.vein,
+        flex: '0 0 auto',
+      }}
+    />
+    Venas
   </button>
 
   <button
     onClick={() => setLabelFilters((p) => ({ ...p, organ: !p.organ }))}
     style={{
-      background: labelFilters.organ ? CATEGORY_COLORS.organ : '#444',
-      color: 'white',
-      border: 'none',
-      padding: '8px 10px',
-      borderRadius: 8,
+      display: 'flex',
+      alignItems: 'center',
+      gap: 8,
+      minWidth: 130,
+      padding: '8px 12px',
+      borderRadius: 10,
+      border: '1px solid #d1d5db',
+      background: labelFilters.organ ? '#ffffff' : '#e5e7eb',
+      color: '#111827',
       cursor: 'pointer',
+      fontWeight: 500,
+      textAlign: 'left',
     }}
   >
+    <span
+      style={{
+        width: 10,
+        height: 10,
+        borderRadius: 999,
+        background: CATEGORY_COLORS.organ,
+        flex: '0 0 auto',
+      }}
+    />
     Órganos
   </button>
 </div>
 {/* END [3.30.2.5] Viewer :: label filters */}
+
 
         {/* [3.30.2.6] Viewer :: prev/next */}
         <button
