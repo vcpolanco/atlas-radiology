@@ -1166,10 +1166,11 @@ function clearAllAnnotations() {
       padding: '8px 12px',
       borderRadius: 10,
       border: '1px solid #d1d5db',
-      background: labelFilters.airway ? '#ffffff' : '#e5e7eb',
-      color: '#111827',
+        background: labelFilters.airway ? '#ffffff' : '#1f2933',
+        color: labelFilters.airway ? '#000000' : '#ffffff',
+        fontWeight: labelFilters.airway ? 700 : 400,
+        fontStyle: labelFilters.airway ? 'normal' : 'italic',
       cursor: 'pointer',
-      fontWeight: 500,
       textAlign: 'left',
     }}
   >
@@ -1195,10 +1196,11 @@ function clearAllAnnotations() {
       padding: '8px 12px',
       borderRadius: 10,
       border: '1px solid #d1d5db',
-      background: labelFilters.artery ? '#ffffff' : '#e5e7eb',
-      color: '#111827',
+        background: labelFilters.artery ? '#ffffff' : '#1f2933',
+        color: labelFilters.artery ? '#000000' : '#ffffff',
+        fontWeight: labelFilters.artery ? 700 : 400,
+        fontStyle: labelFilters.artery ? 'normal' : 'italic',
       cursor: 'pointer',
-      fontWeight: 500,
       textAlign: 'left',
     }}
   >
@@ -1224,10 +1226,11 @@ function clearAllAnnotations() {
       padding: '8px 12px',
       borderRadius: 10,
       border: '1px solid #d1d5db',
-      background: labelFilters.vein ? '#ffffff' : '#e5e7eb',
-      color: '#111827',
+        background: labelFilters.vein ? '#ffffff' : '#1f2933',
+        color: labelFilters.vein ? '#000000' : '#ffffff',
+        fontWeight: labelFilters.vein ? 700 : 400,
+        fontStyle: labelFilters.vein ? 'normal' : 'italic',
       cursor: 'pointer',
-      fontWeight: 500,
       textAlign: 'left',
     }}
   >
@@ -1253,10 +1256,11 @@ function clearAllAnnotations() {
       padding: '8px 12px',
       borderRadius: 10,
       border: '1px solid #d1d5db',
-      background: labelFilters.organ ? '#ffffff' : '#e5e7eb',
-      color: '#111827',
+       background: labelFilters.organ ? '#ffffff' : '#1f2933',
+        color: labelFilters.organ ? '#000000' : '#ffffff',
+        fontWeight: labelFilters.organ ? 700 : 400,
+        fontStyle: labelFilters.organ ? 'normal' : 'italic',
       cursor: 'pointer',
-      fontWeight: 500,
       textAlign: 'left',
     }}
   >
