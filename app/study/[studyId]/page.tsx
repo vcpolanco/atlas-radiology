@@ -927,12 +927,15 @@ function clearAllAnnotations() {
   /* END [3.26] STYLE HELPERS */
 
 
-  /* =====================================================
-    [3.27] UI FLAGS :: minimal mode
-    ===================================================== */
-  const SHOW_LEFT_PANEL_PUBLIC = false // visor minimalista
-  const showLeftPanel = mounted && (isAuthor ? true : SHOW_LEFT_PANEL_PUBLIC)
-  /* END [3.27] UI FLAGS :: minimal mode */
+/* =====================================================
+  [3.27] UI FLAGS :: minimal mode
+  ===================================================== */
+const SHOW_LEFT_PANEL_PUBLIC = false // visor minimalista
+const SHOW_LEFT_PANEL_AUTHOR = false // ocultar columna Slices en author
+
+const showLeftPanel =
+  mounted && (isAuthor ? SHOW_LEFT_PANEL_AUTHOR : SHOW_LEFT_PANEL_PUBLIC)
+/* END [3.27] UI FLAGS :: minimal mode */
 
 
 
