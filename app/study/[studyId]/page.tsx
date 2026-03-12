@@ -1256,13 +1256,14 @@ function clearAllAnnotations() {
           disabled={slice <= 0}
           style={{
             position: 'fixed',
-            bottom: 20,
-            left: 20,
+            bottom: isMobile ? 12 : 20,
+            left: isMobile ? 12: 20,
             zIndex: 9999,
             background: slice <= 0 ? '#333' : '#2563eb',
             color: 'white',
             border: 'none',
-            padding: '10px 14px',
+            padding: isMobile ? '5px 8px' : '10px 14px',
+            fontSize: isMobile ? 11 : 14,
             borderRadius: 10,
             cursor: slice <= 0 ? 'not-allowed' : 'pointer',
             opacity: slice <= 0 ? 0.5 : 1,
