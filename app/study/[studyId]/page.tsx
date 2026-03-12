@@ -503,41 +503,103 @@ useEffect(() => {
 
 
   /* =====================================================
-     [3.13] EFFECT :: localStorage load/save (AUTHOR ONLY)
-     ===================================================== */
-  const storageKey = `anatoslice:${studyId}:annotations`
+   [3.13] EFFECT :: author load/save
+   - AUTHOR primero intenta cargar annotations.json publicado
+   - si no existe, usa localStorage como fallback
+   ===================================================== */
+const storageKey = `anatoslice:${studyId}:annotations`
 
-  useEffect(() => {
-    if (!studyId) return
-    if (!isAuthor) return
+useEffect(() => {
+  if (!studyId) return
+  if (!study) return
+  if (!isAuthor) return
 
-    const raw = localStorage.getItem(storageKey)
-    if (!raw) {
-      setAnnotationsBySlice({})
-      return
-    }
+  let cancelled = false
 
-    const parsed = safeParseAnnotations(raw)
-    if (!parsed) {
-      setAnnotationsBySlice({})
-      return
-    }
-
-    setAnnotationsBySlice(parsed)
-    setLastLoadedFile('Auto (localStorage)')
-  }, [studyId, isAuthor]) // eslint-disable-line react-hooks/exhaustive-deps
-
-  useEffect(() => {
-    if (!studyId) return
-    if (!isAuthor) return
+  async function loadAuthorAnnotations() {
     try {
-      localStorage.setItem(storageKey, JSON.stringify(annotationsBySlice))
-    } catch {
-      // no-op
-    }
-  }, [studyId, isAuthor, annotationsBySlice])
-  /* END [3.13] EFFECT :: localStorage load/save */
+      const res = await fetch(`${study.basePath}/annotations.json?v=${Date.now()}`, {
+        cache: 'no-store',
+      })
 
+      if (res.ok) {
+        const text = await res.text()
+        const parsed = safeParseAnnotations(text)
+
+        if (parsed && !cancelled) {
+          const normalized: AnnotationsBySlice = {}
+
+          for (const [k, arr] of Object.entries(parsed)) {
+            const idx = Number(k)
+            if (!Number.isFinite(idx) || !Array.isArray(arr)) continue
+
+            normalized[String(idx)] = arr
+              .filter((it) => it && typeof it === 'object')
+              .map((it: any) => ({
+                structureId: String(it.structureId ?? 'unknown'),
+                x: Number(it.x),
+                y: Number(it.y),
+              }))
+              .filter((it) => Number.isFinite(it.x) && Number.isFinite(it.y))
+          }
+
+          setAnnotationsBySlice(normalized)
+          setLastLoadedFile('Curated (public annotations.json)')
+          return
+        }
+      }
+    } catch {
+      // sigue a localStorage
+    }
+
+    try {
+      const raw = localStorage.getItem(storageKey)
+      if (!raw) {
+        if (!cancelled) {
+          setAnnotationsBySlice({})
+          setLastLoadedFile('—')
+        }
+        return
+      }
+
+      const parsed = safeParseAnnotations(raw)
+      if (!parsed) {
+        if (!cancelled) {
+          setAnnotationsBySlice({})
+          setLastLoadedFile('—')
+        }
+        return
+      }
+
+      if (!cancelled) {
+        setAnnotationsBySlice(parsed)
+        setLastLoadedFile('Auto (localStorage)')
+      }
+    } catch {
+      if (!cancelled) {
+        setAnnotationsBySlice({})
+        setLastLoadedFile('—')
+      }
+    }
+  }
+
+  loadAuthorAnnotations()
+
+  return () => {
+    cancelled = true
+  }
+}, [studyId, study, isAuthor]) // eslint-disable-line react-hooks/exhaustive-deps
+
+useEffect(() => {
+  if (!studyId) return
+  if (!isAuthor) return
+  try {
+    localStorage.setItem(storageKey, JSON.stringify(annotationsBySlice))
+  } catch {
+    // no-op
+  }
+}, [studyId, isAuthor, annotationsBySlice])
+/* END [3.13] EFFECT :: author load/save */
 
   /* =====================================================
      [3.14] EFFECT :: load curated annotations.json (PUBLIC)
