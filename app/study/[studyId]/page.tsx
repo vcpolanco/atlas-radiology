@@ -161,7 +161,6 @@ const [labelFilters, setLabelFilters] = useState({
   organ: true,
 })
 
-  const [sidebarOpen, setSidebarOpen] = useState(true)
   const [isMobile, setIsMobile] = useState(false)
   const [mounted, setMounted] = useState(false)
   /* END [3.3] STATE :: CORE UI */
@@ -351,16 +350,6 @@ function getColorForStructureId(structureId: string) {
     return () => window.removeEventListener('resize', checkMobile)
   }, [])
   /* END [3.8] EFFECT :: detect mobile */
-
-
-  /* =====================================================
-     [3.9] EFFECT :: auto-close sidebar on mobile (on slice change)
-     ===================================================== */
-  useEffect(() => {
-    if (isMobile) setSidebarOpen(false)
-  }, [slice, isMobile])
-  /* END [3.9] EFFECT :: auto-close sidebar */
-
 
 
 /* =====================================================
@@ -868,10 +857,7 @@ function clearAllAnnotations() {
   /* =====================================================
      [3.26] STYLE HELPERS
      ===================================================== */
-  const SIDEBAR_W_DESKTOP = 320
-  const SIDEBAR_W_MOBILE = 180
-  const sidebarW = isMobile ? SIDEBAR_W_MOBILE : SIDEBAR_W_DESKTOP
-
+  
   const sideBtnStyle: React.CSSProperties = {
     width: '100%',
     textAlign: 'left',
@@ -913,29 +899,8 @@ function clearAllAnnotations() {
     boxShadow: '0 1px 4px rgba(0,0,0,0.45)',
   })
 
-  const sidePanelStyle: React.CSSProperties = {
-    flex: '0 0 auto',
-    width: sidebarOpen ? sidebarW : 0,
-    maxWidth: sidebarOpen ? sidebarW : 0,
-    minWidth: 0,
-    overflow: 'hidden',
-    padding: sidebarOpen ? 12 : 0,
-    borderRight: sidebarOpen ? '1px solid rgba(0,0,0,0.12)' : 'none',
-    transition: 'width 180ms ease, max-width 180ms ease, padding 180ms ease',
-    boxSizing: 'border-box',
-  }
+  
   /* END [3.26] STYLE HELPERS */
-
-
-/* =====================================================
-  [3.27] UI FLAGS :: minimal mode
-  ===================================================== */
-const SHOW_LEFT_PANEL_PUBLIC = false // visor minimalista
-const SHOW_LEFT_PANEL_AUTHOR = false // ocultar columna Slices en author
-
-const showLeftPanel =
-  mounted && (isAuthor ? SHOW_LEFT_PANEL_AUTHOR : SHOW_LEFT_PANEL_PUBLIC)
-/* END [3.27] UI FLAGS :: minimal mode */
 
 
 
@@ -949,45 +914,7 @@ const showLeftPanel =
   return (
     <div className="appRoot">
 
-      {/* =====================================================
-    [3.30.1] JSX :: sidePanel (optional)
-    Where: return() -> inside <div className="appRoot">
-   ===================================================== */}
-    {showLeftPanel && (
-      <aside
-        className="sidePanel"
-        style={{
-          ...sidePanelStyle,
-          pointerEvents: sidebarOpen ? 'auto' : 'none',
-        }}
-      >
-        {/* SidePanel content */}
-        <div className="keySlicesList">
-          {study.keySlices?.map((k) => {
-            const idx = typeof k === 'number' ? k : k.idx
-            const fallbackLabel = typeof k === 'number' ? undefined : k.label
-
-            return (
-              <button
-                key={`slice-${idx}`}
-                onClick={() => setSlice(idx)}
-                className={`sidePanelItem ${idx === slice ? 'active' : ''}`}
-                style={{
-                  ...sideBtnStyle,
-                  background:
-                    idx === slice ? 'rgba(59,130,246,0.85)' : sideBtnStyle.background,
-                }}
-              >
-                {KEY_SLICE_LABELS_ES[idx] ?? fallbackLabel ?? `Slice ${idx}`}
-              </button>
-            )
-          })}
-        </div>
-      </aside>
-    )}
-    {/* END [3.30.1] JSX :: sidePanel (optional) */}
-
-
+      
       {/* =====================================================
          [3.30.2] JSX :: viewer
          ===================================================== */}
@@ -1000,33 +927,7 @@ const showLeftPanel =
         onTouchEnd={onTouchEnd}
         className="viewer"
       >
-        {/* [3.30.2.1] Viewer :: toggle sidebar   POR AHORA SILENCIADO */}
-        
-        {showLeftPanel && (
-        <button
-          onClick={(e) => {
-            e.stopPropagation()
-            setSidebarOpen((v) => !v)
-          }}
-          style={{
-            position: 'absolute',
-            top: 10,
-            left: 10,
-            zIndex: 99999,
-            padding: isMobile ? '8px 10px' : '8px 12px',
-            fontSize: isMobile ? 12 : 13,
-            borderRadius: 12,
-            border: '1px solid rgba(255,255,255,0.14)',
-            background: 'rgba(0,0,0,0.55)',
-            color: 'white',
-            cursor: 'pointer',
-          }}
-        >
-          {sidebarOpen ? 'Ocultar' : 'Slices'}
-        </button>
-        )}
-
-
+       
 
         {/* [3.30.2.2] Viewer :: slice counter */}
         <div
