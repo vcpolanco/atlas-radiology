@@ -514,11 +514,13 @@ useEffect(() => {
   if (!study) return
   if (!isAuthor) return
 
+  const s = study // snapshot para TypeScript
+
   let cancelled = false
 
   async function loadAuthorAnnotations() {
     try {
-      const res = await fetch(`${study.basePath}/annotations.json?v=${Date.now()}`, {
+      const res = await fetch(`${s.basePath}/annotations.json?v=${Date.now()}`, {
         cache: 'no-store',
       })
 
