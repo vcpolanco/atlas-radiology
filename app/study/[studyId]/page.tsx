@@ -1280,13 +1280,14 @@ function clearAllAnnotations() {
           disabled={slice >= TOTAL_SLICES - 1}
           style={{
             position: 'fixed',
-            bottom: 20,
-            left: 110,
+            bottom: isMobile ? 12 : 20,
+            left: isMobile ? 70 : 110,
             zIndex: 9999,
             background: slice >= TOTAL_SLICES - 1 ? '#333' : '#2563eb',
             color: 'white',
             border: 'none',
-            padding: '10px 14px',
+            padding: isMobile ? '5px 8px' : '10px 14px',
+            fontSize: isMobile ? 11 : 14,
             borderRadius: 10,
             cursor: slice >= TOTAL_SLICES - 1 ? 'not-allowed' : 'pointer',
             opacity: slice >= TOTAL_SLICES - 1 ? 0.5 : 1,
@@ -1412,13 +1413,17 @@ function clearAllAnnotations() {
     touch-action: none;
   }
 
-  .viewerImg {
-    width: 100%;
-    height: 100%;
-    object-fit: contain;
-    user-select: none;
-    -webkit-user-drag: none;
+  @media (max-width: 768px) {
+  .viewer {
+    align-items: center;
+    justify-content: center;
   }
+
+  .viewerImg {
+    max-height: 92vh;
+  }
+}
+
 `}</style>
 
 
