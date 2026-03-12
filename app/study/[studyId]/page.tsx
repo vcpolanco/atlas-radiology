@@ -1121,7 +1121,7 @@ function clearAllAnnotations() {
     zIndex: 9999,
     display: 'flex',
     flexDirection: 'column',
-    gap: 8,
+    gap: isMobile ? 4 : 8,
   }}
 >
   <button
@@ -1129,23 +1129,24 @@ function clearAllAnnotations() {
     style={{
       display: 'flex',
       alignItems: 'center',
-      gap: 8,
-      minWidth: 130,
-      padding: '8px 12px',
-      borderRadius: 10,
+      gap: isMobile ? 4 : 8,
+      minWidth: isMobile ? 65 : 130,
+      padding: isMobile ? '4px 6px' : '8px 12px',
+      borderRadius: isMobile ? 8 : 10,
       border: '1px solid #d1d5db',
-        background: labelFilters.airway ? '#ffffff' : '#1f2933',
-        color: labelFilters.airway ? '#000000' : '#ffffff',
-        fontWeight: labelFilters.airway ? 700 : 400,
-        fontStyle: labelFilters.airway ? 'normal' : 'italic',
+      background: labelFilters.airway ? '#ffffff' : '#1f2933',
+      color: labelFilters.airway ? '#000000' : '#ffffff',
+      fontWeight: labelFilters.airway ? 700 : 400,
+      fontStyle: labelFilters.airway ? 'normal' : 'italic',
+      fontSize: isMobile ? 11 : 14,
       cursor: 'pointer',
       textAlign: 'left',
     }}
   >
     <span
       style={{
-        width: 10,
-        height: 10,
+        width: isMobile ? 6 : 10,
+        height: isMobile ? 6 : 10,
         borderRadius: 999,
         background: CATEGORY_COLORS.airway,
         flex: '0 0 auto',
@@ -1159,23 +1160,24 @@ function clearAllAnnotations() {
     style={{
       display: 'flex',
       alignItems: 'center',
-      gap: 8,
-      minWidth: 130,
-      padding: '8px 12px',
-      borderRadius: 10,
+      gap: isMobile ? 4 : 8,
+      minWidth: isMobile ? 65 : 130,
+      padding: isMobile ? '4px 6px' : '8px 12px',
+      borderRadius: isMobile ? 8 : 10,
       border: '1px solid #d1d5db',
-        background: labelFilters.artery ? '#ffffff' : '#1f2933',
-        color: labelFilters.artery ? '#000000' : '#ffffff',
-        fontWeight: labelFilters.artery ? 700 : 400,
-        fontStyle: labelFilters.artery ? 'normal' : 'italic',
+      background: labelFilters.artery ? '#ffffff' : '#1f2933',
+      color: labelFilters.artery ? '#000000' : '#ffffff',
+      fontWeight: labelFilters.artery ? 700 : 400,
+      fontStyle: labelFilters.artery ? 'normal' : 'italic',
+      fontSize: isMobile ? 11 : 14,
       cursor: 'pointer',
       textAlign: 'left',
     }}
   >
     <span
       style={{
-        width: 10,
-        height: 10,
+        width: isMobile ? 6 : 10,
+        height: isMobile ? 6 : 10,
         borderRadius: 999,
         background: CATEGORY_COLORS.artery,
         flex: '0 0 auto',
@@ -1189,23 +1191,24 @@ function clearAllAnnotations() {
     style={{
       display: 'flex',
       alignItems: 'center',
-      gap: 8,
-      minWidth: 130,
-      padding: '8px 12px',
-      borderRadius: 10,
+      gap: isMobile ? 4 : 8,
+      minWidth: isMobile ? 65 : 130,
+      padding: isMobile ? '4px 6px' : '8px 12px',
+      borderRadius: isMobile ? 8 : 10,
       border: '1px solid #d1d5db',
-        background: labelFilters.vein ? '#ffffff' : '#1f2933',
-        color: labelFilters.vein ? '#000000' : '#ffffff',
-        fontWeight: labelFilters.vein ? 700 : 400,
-        fontStyle: labelFilters.vein ? 'normal' : 'italic',
+      background: labelFilters.vein ? '#ffffff' : '#1f2933',
+      color: labelFilters.vein ? '#000000' : '#ffffff',
+      fontWeight: labelFilters.vein ? 700 : 400,
+      fontStyle: labelFilters.vein ? 'normal' : 'italic',
+      fontSize: isMobile ? 11 : 14,
       cursor: 'pointer',
       textAlign: 'left',
     }}
   >
     <span
       style={{
-        width: 10,
-        height: 10,
+        width: isMobile ? 6 : 10,
+        height: isMobile ? 6 : 10,
         borderRadius: 999,
         background: CATEGORY_COLORS.vein,
         flex: '0 0 auto',
@@ -1219,23 +1222,24 @@ function clearAllAnnotations() {
     style={{
       display: 'flex',
       alignItems: 'center',
-      gap: 8,
-      minWidth: 130,
-      padding: '8px 12px',
-      borderRadius: 10,
+      gap: isMobile ? 4 : 8,
+      minWidth: isMobile ? 65 : 130,
+      padding: isMobile ? '4px 6px' : '8px 12px',
+      borderRadius: isMobile ? 8 : 10,
       border: '1px solid #d1d5db',
-       background: labelFilters.organ ? '#ffffff' : '#1f2933',
-        color: labelFilters.organ ? '#000000' : '#ffffff',
-        fontWeight: labelFilters.organ ? 700 : 400,
-        fontStyle: labelFilters.organ ? 'normal' : 'italic',
+      background: labelFilters.organ ? '#ffffff' : '#1f2933',
+      color: labelFilters.organ ? '#000000' : '#ffffff',
+      fontWeight: labelFilters.organ ? 700 : 400,
+      fontStyle: labelFilters.organ ? 'normal' : 'italic',
+      fontSize: isMobile ? 11 : 14,
       cursor: 'pointer',
       textAlign: 'left',
     }}
   >
     <span
       style={{
-        width: 10,
-        height: 10,
+        width: isMobile ? 6 : 10,
+        height: isMobile ? 6 : 10,
         borderRadius: 999,
         background: CATEGORY_COLORS.organ,
         flex: '0 0 auto',
@@ -1413,17 +1417,19 @@ function clearAllAnnotations() {
     touch-action: none;
   }
 
-  @media (max-width: 768px) {
-  .viewer {
-    align-items: center;
-    justify-content: center;
-  }
-
   .viewerImg {
-    max-height: 92vh;
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    user-select: none;
+    -webkit-user-drag: none;
   }
-}
 
+  @media (max-width: 768px) {
+    .viewerImg {
+      transform: translateY(-18px);
+    }
+  }
 `}</style>
 
 
