@@ -1316,90 +1316,47 @@ function clearAllAnnotations() {
       {/* =====================================================
          [3.30.3] JSX :: scoped styles (CSS only)
          ===================================================== */}
+      
+      
       <style jsx>{`
-        /* ===================================================== */
-        /* [3.30.3] LAYOUT :: root                               */
-        /* ===================================================== */
-        .appRoot {
-          height: 100vh;
-          display: flex;
-          flex-direction: row;
-          background: #000;
-          overflow: hidden;
-          min-height: 0;
-        }
+  /* ===================================================== */
+  /* [3.30.3] LAYOUT :: root                               */
+  /* ===================================================== */
+  .appRoot {
+    height: 100vh;
+    display: flex;
+    flex-direction: row;
+    background: #000;
+    overflow: hidden;
+    min-height: 0;
+  }
 
-        /* ===================================================== */
-        /* [3.30.3] SIDE PANEL (width is controlled inline)      */
-        /* ===================================================== */
-        .sidePanel {
-          flex: 0 0 auto;
-          background: rgba(10, 10, 10, 0.95);
-          border-right: 1px solid #222;
-          overflow-y: auto;
-          color: white;
-          min-height: 0;
-          min-width: 0;
-          box-sizing: border-box;
-        }
+  /* ===================================================== */
+  /* [3.30.3] VIEWER                                       */
+  /* ===================================================== */
+  .viewer {
+    flex: 1;
+    min-width: 0;
+    min-height: 0;
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #000;
+    touch-action: none;
+  }
 
-        /* ===================================================== */
-        /* [3.30.3] KEY SLICES LIST                              */
-        /* ===================================================== */
-        .keySlicesList {
-          display: flex;
-          flex-direction: column;
-          gap: 10px;
-        }
+  .viewerImg {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    user-select: none;
+    -webkit-user-drag: none;
+  }
+`}</style>
 
-        .sidePanelItem {
-          width: 100%;
-          display: block;
-          text-align: left;
-          background: rgba(0, 0, 0, 0.85);
-          color: white;
-          border: 1px solid rgba(255, 255, 255, 0.1);
-          border-radius: 12px;
-          padding: 10px 12px;
-          cursor: pointer;
-          transition: transform 120ms ease, background 120ms ease, border-color 120ms ease;
-        }
 
-        .sidePanelItem:hover {
-          background: rgba(0, 0, 0, 0.92);
-          border-color: rgba(255, 255, 255, 0.18);
-          transform: translateY(-1px);
-        }
-
-        .sidePanelItem.active {
-          background: rgba(37, 99, 235, 0.95);
-          border-color: rgba(37, 99, 235, 1);
-        }
-
-        /* ===================================================== */
-        /* [3.30.3] VIEWER                                       */
-        /* ===================================================== */
-        .viewer {
-          flex: 1;
-          min-width: 0;
-          min-height: 0;
-          position: relative;
-          overflow: hidden;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          background: #000;
-          touch-action: none;
-        }
-
-        .viewerImg {
-          width: 100%;
-          height: 100%;
-          object-fit: contain;
-          user-select: none;
-          -webkit-user-drag: none;
-        }
-      `}</style>
       {/* END [3.30.3] JSX :: scoped styles */}
     </div>
   )
