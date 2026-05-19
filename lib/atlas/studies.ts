@@ -1,6 +1,7 @@
 import type { Study } from "./types"
 
 import { THORAX_CT_PUBLIC } from '@/lib/anatomy/profiles/thorax_ct_public'
+import { ABDOMEN_CT_CORE_PROFILE } from '@/lib/anatomy/profiles/abdomen_ct_core'
 
 // =====================================================
 // [S] STUDIES :: REGISTRY (Atlas studies list)
@@ -61,41 +62,22 @@ export const STUDIES: Study[] = [
     slicesExt: "jpg",
     sliceName: { prefix: "slice", pad: 3 }, // slice001.jpg ... slice105.jpg
 
-    // =====================================================
-    // KEY SLICES :: Abdomen CT (named)
-    // CORTES CLAVE :: TC Abdomen (con nombre)
-    // Purpose (EN): quick navigation to key anatomy levels
-    // Propósito (ES): navegación rápida por niveles anatómicos clave
-    // =====================================================
-    keySlices: [
-      { idx: 10, label: "Estómago / Stomach" },
-      { idx: 30, label: "Riñón (nivel medio) / Kidney (mid level)" },
-      { idx: 50, label: "Vejiga / Bladder" },
-      { idx: 70, label: "Pelvis (vejiga/próstata si visible) / Pelvis (bladder/prostate if visible)" },
-    ],
-    // END SECTION :: KEY SLICES :: Abdomen CT (named)
-    // Fin sección :: Cortes clave :: TC Abdomen (con nombre)
+   // =====================================================
+// STRUCTURES :: Abdomen (with side L/R/M)
+// ESTRUCTURAS :: Abdomen (con lado I/D/M)
+// =====================================================
+structures: ABDOMEN_CT_CORE_PROFILE.structures.map((s) => ({
+  id: s.id,
+  label: s.labelEs ?? s.id,
+  side: s.side,
+  category: s.category,
+})),
+  
+},
+// END SECTION :: STRUCTURES :: Abdomen (with side)
+// Fin sección :: Estructuras :: Abdomen (con lado)
 
 
-    // =====================================================
-    // STRUCTURES :: Abdomen (with side L/R/M)
-    // ESTRUCTURAS :: Abdomen (con lado I/D/M)
-    // =====================================================
-    structures: [
-      { id: "stomach", label: "Estómago", side: "L" },
-      { id: "liver", label: "Hígado", side: "R" },
-      { id: "spleen", label: "Bazo", side: "L" },
-      { id: "kidney_r", label: "Riñón derecho", side: "R" },
-      { id: "kidney_l", label: "Riñón izquierdo", side: "L" },
-      { id: "bladder", label: "Vejiga", side: "M" },
-    ],
-    // END SECTION :: STRUCTURES :: Abdomen (with side)
-    // Fin sección :: Estructuras :: Abdomen (con lado)
-
-    
-  },
-  // END SECTION :: [S.2] STUDY :: Abdomen CT Normal v1
-  // Fin sección :: [S.2] Estudio TC Abdomen normal v1
 ]
 
 

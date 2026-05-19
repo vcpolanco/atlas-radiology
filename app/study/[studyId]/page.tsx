@@ -194,6 +194,11 @@ const touchStartXRef = useRef<number | null>(null)
 const touchLastStepYRef = useRef<number | null>(null)
 const touchIsSwipingRef = useRef(false)
 
+// funcion para mantener click izq mantenido y cambiar slices //
+const mouseIsDraggingRef = useRef(false)
+const mouseLastStepYRef = useRef<number | null>(null)
+const mouseDidDragRef = useRef(false)
+
 
 
   /* END [3.5] REFS :: DOM + TOUCH + PRELOAD */
@@ -270,11 +275,18 @@ const callouts: CalloutPlaced[] = useMemo(() => {
 
   const placed = layoutCallouts(items, g.v.height, MIN_GAP_PX)
 
-  const COL_PAD = 12
-  return placed.map((p) => {
-    const endX = p.isLeft ? COL_PAD : Math.max(COL_PAD, g.v.width - COL_PAD)
-    return { ...p, endX, endY: p.endY }
-  })
+ const LABEL_GAP = 12
+
+return placed.map((p) => {
+  const imageLeft = g.i.left - g.v.left
+  const imageRight = imageLeft + g.i.width
+
+  const endX = p.isLeft
+    ? imageLeft - LABEL_GAP
+    : imageRight + LABEL_GAP
+
+  return { ...p, endX, endY: p.endY }
+})
 }, [geom, annotations, study, anatomyProfile, labelById])
 
 function getColorForStructureId(structureId: string) {
@@ -760,6 +772,48 @@ function onTouchEnd() {
   // dejá touchIsSwipingRef.current como está; lo usamos para bloquear tap en author
 }
 
+/* =====================================================
+   [3.19.x] HANDLERS :: desktop vertical mouse drag slice navigation
+   ===================================================== */
+function onMouseDown(e: React.MouseEvent<HTMLDivElement>) {
+  if (isMobile) return
+  if (e.button !== 0) return
+  if (TOTAL_SLICES <= 0) return
+
+  mouseIsDraggingRef.current = true
+  mouseLastStepYRef.current = e.clientY
+  mouseDidDragRef.current = false
+}
+
+function onMouseMove(e: React.MouseEvent<HTMLDivElement>) {
+  if (isMobile) return
+  if (!mouseIsDraggingRef.current) return
+  if (TOTAL_SLICES <= 0) return
+
+  const lastY = mouseLastStepYRef.current
+  if (lastY == null) return
+
+  const dy = e.clientY - lastY
+  const STEP_PX = 18
+
+  if (Math.abs(dy) >= STEP_PX) {
+    stepSlice(dy > 0 ? +1 : -1)
+
+    mouseLastStepYRef.current = e.clientY
+    mouseDidDragRef.current = true
+  }
+}
+
+function onMouseUp() {
+  mouseIsDraggingRef.current = false
+  mouseLastStepYRef.current = null
+}
+
+function onMouseLeave() {
+  mouseIsDraggingRef.current = false
+  mouseLastStepYRef.current = null
+}
+/* END [3.19.x] HANDLERS :: desktop vertical mouse drag slice navigation */
 
 
 
@@ -791,37 +845,41 @@ function onTouchEnd() {
 
 
   /* =====================================================
-     [3.22] HANDLER :: addPointAtClick (AUTHOR)
-     ===================================================== */
-  function addPointAtClick(e: React.MouseEvent<HTMLDivElement>) {
-    if (!isAuthor) return
+   [3.22] HANDLER :: addPointAtClick (AUTHOR)
+   ===================================================== */
+function addPointAtClick(e: React.MouseEvent<HTMLDivElement>) {
+  if (!isAuthor) return
 
-    const img = imgRef.current
-    if (!img) return
+  if (mouseDidDragRef.current) {
+    mouseDidDragRef.current = false
+    return
+  }
 
-    // si el último gesto fue swipe, no marcar punto
-    if (touchIsSwipingRef.current) {
+  const img = imgRef.current
+  if (!img) return
+
+  // si el último gesto fue swipe, no marcar punto
+  if (touchIsSwipingRef.current) {
     touchIsSwipingRef.current = false
     return
-    }
-
-    const iRect = img.getBoundingClientRect()
-    const cRect = getContainedImageRectPx(img, iRect)
-
-    const relX = (e.clientX - cRect.left) / cRect.width
-    const relY = (e.clientY - cRect.top) / cRect.height
-
-    if (relX < 0 || relX > 1 || relY < 0 || relY > 1) return
-
-    const sid = selectedStructureId || activeStructure
-if (!sid) return // no marcar si no hay estructura elegida
-
-const ann: Annotation = { structureId: sid, x: relX, y: relY }
-
-    
-    upsertAnnotationAtSlice(slice, ann)
   }
-  /* END [3.22] HANDLER :: addPointAtClick (AUTHOR) */
+
+  const iRect = img.getBoundingClientRect()
+  const cRect = getContainedImageRectPx(img, iRect)
+
+  const relX = (e.clientX - cRect.left) / cRect.width
+  const relY = (e.clientY - cRect.top) / cRect.height
+
+  if (relX < 0 || relX > 1 || relY < 0 || relY > 1) return
+
+  const sid = selectedStructureId || activeStructure
+  if (!sid) return // no marcar si no hay estructura elegida
+
+  const ann: Annotation = { structureId: sid, x: relX, y: relY }
+
+  upsertAnnotationAtSlice(slice, ann)
+}
+/* END [3.22] HANDLER :: addPointAtClick (AUTHOR) */
 
 
   /* =====================================================
@@ -1011,14 +1069,18 @@ function layoutCallouts(items: CalloutItem[], viewH: number, minGapPx: number) {
          [3.30.2] JSX :: viewer
          ===================================================== */}
       <main
-        ref={viewerRef}
-        onWheel={onWheel}
-        onClick={isAuthor ? addPointAtClick : undefined}
-        onTouchStart={onTouchStart}
-        onTouchMove={onTouchMove}
-        onTouchEnd={onTouchEnd}
-        className="viewer"
-      >
+  ref={viewerRef}
+  onWheel={onWheel}
+  onClick={isAuthor ? addPointAtClick : undefined}
+  onTouchStart={onTouchStart}
+  onTouchMove={onTouchMove}
+  onTouchEnd={onTouchEnd}
+  onMouseDown={onMouseDown}
+  onMouseMove={onMouseMove}
+  onMouseUp={onMouseUp}
+  onMouseLeave={onMouseLeave}
+  className="viewer"
+>
        
 
         {/* [3.30.2.2] Viewer :: slice counter */}
@@ -1126,9 +1188,9 @@ function layoutCallouts(items: CalloutItem[], viewH: number, minGapPx: number) {
       top: c.endY,
       zIndex: 9000,
       ...calloutLabelStyle,
-      left: c.isLeft ? c.endX : undefined,
-      right: c.isLeft ? undefined : isMobile ? 8 : 12,
-      textAlign: c.isLeft ? 'left' : 'right',
+      left: c.endX,
+      transform: c.isLeft ? 'translateX(-100%)' : 'translateX(0)',
+      textAlign: c.isLeft ? 'right' : 'left',
     }}
   >
     {c.label}
