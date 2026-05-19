@@ -875,47 +875,75 @@ function clearAllAnnotations() {
 
 
   /* =====================================================
-     [3.24] fx :: layoutCallouts
-     ===================================================== */
-  function layoutCallouts(items: CalloutItem[], viewH: number, minGapPx: number) {
-    const placeSide = (side: CalloutItem[]) => {
-      const sorted = [...side].sort((a, b) => a.py - b.py)
+   [3.24] fx :: layoutCallouts
+   ===================================================== */
+function layoutCallouts(items: CalloutItem[], viewH: number, minGapPx: number) {
+  const TOP_LIMIT = 16
+  const BOTTOM_LIMIT = viewH - 16
 
-      const placed: CalloutPlaced[] = []
-      let lastY = -Infinity
+  const placeSide = (side: CalloutItem[]) => {
+    const sorted = [...side].sort((a, b) => a.py - b.py)
 
-      for (const it of sorted) {
-        let y = it.py
-        y = Math.max(y, lastY + minGapPx)
-        placed.push({ ...it, endX: 0, endY: y })
-        lastY = y
+    const placed: CalloutPlaced[] = sorted.map((it) => ({
+      ...it,
+      endX: 0,
+      endY: it.py,
+    }))
+
+    if (placed.length === 0) return placed
+
+    // 1) Pasada descendente: evita superposición hacia abajo.
+    for (let i = 1; i < placed.length; i++) {
+      const prev = placed[i - 1]
+      const curr = placed[i]
+
+      if (curr.endY < prev.endY + minGapPx) {
+        curr.endY = prev.endY + minGapPx
       }
-
-      if (placed.length > 0) {
-        const maxY = placed[placed.length - 1].endY
-        const bottomLimit = viewH - 16
-        if (maxY > bottomLimit) {
-          const shiftUp = maxY - bottomLimit
-          for (const p of placed) p.endY -= shiftUp
-        }
-
-        const minY = placed[0].endY
-        const topLimit = 16
-        if (minY < topLimit) {
-          const shiftDown = topLimit - minY
-          for (const p of placed) p.endY += shiftDown
-        }
-      }
-
-      return placed
     }
 
-    const left = items.filter((i) => i.isLeft)
-    const right = items.filter((i) => !i.isLeft)
+    // 2) Si se pasa del borde inferior, subir toda la columna.
+    const overflowBottom = placed[placed.length - 1].endY - BOTTOM_LIMIT
 
-    return [...placeSide(left), ...placeSide(right)]
+    if (overflowBottom > 0) {
+      for (const p of placed) {
+        p.endY -= overflowBottom
+      }
+    }
+
+    // 3) Pasada ascendente: evita superposición después del ajuste inferior.
+    for (let i = placed.length - 2; i >= 0; i--) {
+      const next = placed[i + 1]
+      const curr = placed[i]
+
+      if (curr.endY > next.endY - minGapPx) {
+        curr.endY = next.endY - minGapPx
+      }
+    }
+
+    // 4) Si se pasa del borde superior, bajar toda la columna.
+    const overflowTop = TOP_LIMIT - placed[0].endY
+
+    if (overflowTop > 0) {
+      for (const p of placed) {
+        p.endY += overflowTop
+      }
+    }
+
+    // 5) Último clamp defensivo.
+    for (const p of placed) {
+      p.endY = Math.max(TOP_LIMIT, Math.min(BOTTOM_LIMIT, p.endY))
+    }
+
+    return placed
   }
-  /* END [3.24] fx :: layoutCallouts */
+
+  const left = items.filter((i) => i.isLeft)
+  const right = items.filter((i) => !i.isLeft)
+
+  return [...placeSide(left), ...placeSide(right)]
+}
+/* END [3.24] fx :: layoutCallouts */
 
 
   /* =====================================================
