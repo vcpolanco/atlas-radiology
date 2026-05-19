@@ -1,33 +1,29 @@
-// lib/anatomy/profiles/abdomen_ct_core.ts
+type Side = "L" | "R" | "M"
+type Category = "organ" | "artery" | "vein"
 
-import { ABDOMEN_STRUCTURES } from "../structures/abdomen"
+type AbdomenStructure = {
+  id: string
+  labelEs: string
+  side: Side
+  category: Category
+}
+
+const ABDOMEN_STRUCTURES: AbdomenStructure[] = [
+  { id: "liver", labelEs: "Hígado", side: "R", category: "organ" },
+  { id: "spleen", labelEs: "Bazo", side: "L", category: "organ" },
+  { id: "stomach", labelEs: "Estómago", side: "L", category: "organ" },
+  { id: "pancreas", labelEs: "Páncreas", side: "M", category: "organ" },
+  { id: "gallbladder", labelEs: "Vesícula biliar", side: "R", category: "organ" },
+  { id: "kidney_r", labelEs: "Riñón derecho", side: "R", category: "organ" },
+  { id: "kidney_l", labelEs: "Riñón izquierdo", side: "L", category: "organ" },
+  { id: "aorta", labelEs: "Aorta abdominal", side: "M", category: "artery" },
+  { id: "ivc", labelEs: "VCI", side: "M", category: "vein" },
+  { id: "portal_vein", labelEs: "Vena porta", side: "M", category: "vein" },
+  { id: "bladder", labelEs: "Vejiga", side: "M", category: "organ" },
+]
 
 export const ABDOMEN_CT_CORE_PROFILE = {
   id: "abdomen_ct_core",
-
   label: "TC abdomen - anatomía básica",
-
-  structures: [
-    { id: "liver", labelEs: "Hígado", side: "R", category: "organ" },
-
-    { id: "spleen", labelEs: "Bazo", side: "L", category: "organ" },
-
-    { id: "stomach", labelEs: "Estómago", side: "L", category: "organ" },
-
-    { id: "pancreas", labelEs: "Páncreas", side: "M", category: "organ" },
-
-    { id: "gallbladder", labelEs: "Vesícula biliar", side: "R", category: "organ" },
-
-    { id: "kidney_r", labelEs: "Riñón derecho", side: "R", category: "organ" },
-
-    { id: "kidney_l", labelEs: "Riñón izquierdo", side: "L", category: "organ" },
-
-    { id: "aorta", labelEs: "Aorta abdominal", side: "M", category: "artery" },
-
-    { id: "ivc", labelEs: "VCI", side: "M", category: "vein" },
-
-    { id: "portal_vein", labelEs: "Vena porta", side: "M", category: "vein" },
-
-    { id: "bladder", labelEs: "Vejiga", side: "M", category: "organ" },
-  ],
+  structures: ABDOMEN_STRUCTURES,
 } as const
