@@ -275,15 +275,19 @@ const callouts: CalloutPlaced[] = useMemo(() => {
 
   const placed = layoutCallouts(items, g.v.height, MIN_GAP_PX)
 
- const LABEL_GAP = 12
+const LABEL_GAP = isMobile ? 8 : 12
 
 return placed.map((p) => {
   const imageLeft = g.i.left - g.v.left
   const imageRight = imageLeft + g.i.width
 
-  const endX = p.isLeft
-    ? imageLeft - LABEL_GAP
-    : imageRight + LABEL_GAP
+  const endX = isMobile
+    ? p.isLeft
+      ? 8
+      : g.v.width - 8
+    : p.isLeft
+      ? imageLeft - LABEL_GAP
+      : imageRight + LABEL_GAP
 
   return { ...p, endX, endY: p.endY }
 })
@@ -1189,7 +1193,13 @@ function layoutCallouts(items: CalloutItem[], viewH: number, minGapPx: number) {
       zIndex: 9000,
       ...calloutLabelStyle,
       left: c.endX,
-      transform: c.isLeft ? 'translateX(-100%)' : 'translateX(0)',
+      transform: isMobile
+  ? c.isLeft
+    ? 'translateX(0)'
+    : 'translateX(-100%)'
+  : c.isLeft
+    ? 'translateX(-100%)'
+    : 'translateX(0)',
       textAlign: c.isLeft ? 'right' : 'left',
     }}
   >
