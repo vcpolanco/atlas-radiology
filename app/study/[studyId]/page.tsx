@@ -177,6 +177,7 @@ const [labelFilters, setLabelFilters] = useState({
 
   /* [3.4.x] STATE :: CALLOUTS GEOMETRY */
   const [geom, setGeom] = useState<{ v: Rect; i: Rect } | null>(null)
+  const [imageReady, setImageReady] = useState(false)
   /* END [3.4.x] STATE :: CALLOUTS GEOMETRY */
   /* END [3.4] STATE :: ANNOTATIONS / AUTHOR */
 
@@ -211,6 +212,7 @@ const imageUrl = useMemo(() => {
   if (!study) return ''
   return buildSliceUrl(study, slice)
 }, [study, slice])
+
 
 const labelById = useMemo(() => {
   const m = new Map<string, string>()
@@ -425,54 +427,55 @@ function getColorForStructureId(structureId: string) {
    ===================================================== */
 
   useEffect(() => {
-    const update = () => {
-      const v = viewerRef.current
-      const i = imgRef.current
-      if (!v || !i) return
+  const update = () => {
+    const v = viewerRef.current
+    const i = imgRef.current
+    if (!v || !i) return
 
-      const vr = v.getBoundingClientRect()
-      const ir = i.getBoundingClientRect()
-      const cr = getContainedImageRectPx(i, ir)
-      
-      setGeom({
-        v: {
-          left: vr.left,
-          top: vr.top,
-          width: vr.width,
-          height: vr.height,
-          right: vr.right,
-          bottom: vr.bottom,
-        },
-        i: {
-          left: cr.left,
-          top: cr.top,
-          width: cr.width,
-          height: cr.height,
-          right: cr.left + cr.width,
-          bottom: cr.top + cr.height,
-        },
-      })
-    }
+    const vr = v.getBoundingClientRect()
+    const ir = i.getBoundingClientRect()
+    const cr = getContainedImageRectPx(i, ir)
 
-    // Initial + reflow-safe update (double RAF)
-    // Actualización inicial + segura ante reflow (doble RAF)
-    const raf1 = window.requestAnimationFrame(() => {
-      update()
-      window.requestAnimationFrame(update)
+    if (vr.width <= 0 || vr.height <= 0) return
+    if (ir.width <= 0 || ir.height <= 0) return
+    if (cr.width <= 0 || cr.height <= 0) return
+
+    setGeom({
+      v: {
+        left: vr.left,
+        top: vr.top,
+        width: vr.width,
+        height: vr.height,
+        right: vr.right,
+        bottom: vr.bottom,
+      },
+      i: {
+        left: cr.left,
+        top: cr.top,
+        width: cr.width,
+        height: cr.height,
+        right: cr.left + cr.width,
+        bottom: cr.top + cr.height,
+      },
     })
+  }
 
-    window.addEventListener('resize', update)
+  const raf1 = window.requestAnimationFrame(() => {
+    update()
+    window.requestAnimationFrame(update)
+  })
 
-    const img = imgRef.current
-    if (img) img.addEventListener('load', update)
+  window.addEventListener('resize', update)
 
-    return () => {
-      window.cancelAnimationFrame(raf1)
-      window.removeEventListener('resize', update)
-      if (img) img.removeEventListener('load', update)
-    }
-  }, [imageUrl, isMobile])
+  const img = imgRef.current
+  if (img) img.addEventListener('load', update)
 
+  return () => {
+    window.cancelAnimationFrame(raf1)
+    window.removeEventListener('resize', update)
+    if (img) img.removeEventListener('load', update)
+  }
+}, [imageUrl, isMobile])
   /* END [3.10] EFFECT :: callout geometry */
 
 
@@ -691,13 +694,9 @@ useEffect(() => {
      [3.18] HANDLER :: wheel slice navigation
      ===================================================== */
   function onWheel(e: React.WheelEvent<HTMLDivElement>) {
-    e.preventDefault()
-    if (TOTAL_SLICES <= 0) return
-
-    setSlice((prev) =>
-      Math.min(TOTAL_SLICES - 1, Math.max(0, prev + (e.deltaY > 0 ? 1 : -1)))
-    )
-  }
+  e.preventDefault()
+  stepSlice(e.deltaY > 0 ? 1 : -1)
+}
   /* END [3.18] HANDLER :: wheel slice navigation */
 
 
@@ -712,7 +711,17 @@ useEffect(() => {
 
 function stepSlice(delta: number) {
   if (TOTAL_SLICES <= 0) return
-  setSlice((prev) => clampSlice(prev + delta))
+
+  setSlice((prev) => {
+    const next = clampSlice(prev + delta)
+    return next === prev ? prev : next
+  })
+
+  window.requestAnimationFrame(() => {
+    window.requestAnimationFrame(() => {
+      window.dispatchEvent(new Event('resize'))
+    })
+  })
 }
 
 function onTouchStart(e: React.TouchEvent<HTMLDivElement>) {
@@ -1107,7 +1116,45 @@ function layoutCallouts(items: CalloutItem[], viewH: number, minGapPx: number) {
         </div>
 
         {/* [3.30.2.3] Viewer :: image */}
-        <img ref={imgRef} src={imageUrl} alt="CT" draggable={false} className="viewerImg" />
+        <img
+  ref={imgRef}
+  src={imageUrl}
+  alt="CT"
+  draggable={false}
+  className="viewerImg"
+  onLoad={() => {
+    setImageReady(true)
+
+    window.requestAnimationFrame(() => {
+      const v = viewerRef.current
+      const i = imgRef.current
+      if (!v || !i) return
+
+      const vr = v.getBoundingClientRect()
+      const ir = i.getBoundingClientRect()
+      const cr = getContainedImageRectPx(i, ir)
+
+      setGeom({
+        v: {
+          left: vr.left,
+          top: vr.top,
+          width: vr.width,
+          height: vr.height,
+          right: vr.right,
+          bottom: vr.bottom,
+        },
+        i: {
+          left: cr.left,
+          top: cr.top,
+          width: cr.width,
+          height: cr.height,
+          right: cr.left + cr.width,
+          bottom: cr.top + cr.height,
+        },
+      })
+    })
+  }}
+/>
 
 
 
@@ -1115,7 +1162,7 @@ function layoutCallouts(items: CalloutItem[], viewH: number, minGapPx: number) {
         {/* =====================================================
            [3.30.2.4] Viewer :: callouts
            ===================================================== */}
-        {geom && callouts.length > 0 && (
+        {imageReady && geom && callouts.length > 0 && (
           <>
             {/* [3.30.2.4.1] SVG lines */}
             <svg
@@ -1195,12 +1242,11 @@ function layoutCallouts(items: CalloutItem[], viewH: number, minGapPx: number) {
       left: c.endX,
       transform: isMobile
   ? c.isLeft
-    ? 'translateX(0)'
-    : 'translateX(-100%)'
+    ? 'translateX(0) translateY(-50%)'
+    : 'translateX(-100%) translateY(-50%)'
   : c.isLeft
-    ? 'translateX(-100%)'
-    : 'translateX(0)',
-      textAlign: c.isLeft ? 'right' : 'left',
+    ? 'translateX(-100%) translateY(-50%)'
+    : 'translateX(0) translateY(-50%)',
     }}
   >
     {c.label}
@@ -1355,7 +1401,7 @@ function layoutCallouts(items: CalloutItem[], viewH: number, minGapPx: number) {
         <button
           onClick={(e) => {
             e.stopPropagation()
-            setSlice((prev) => Math.max(0, prev - 1))
+            stepSlice(-1)
           }}
           disabled={slice <= 0}
           style={{
@@ -1379,7 +1425,7 @@ function layoutCallouts(items: CalloutItem[], viewH: number, minGapPx: number) {
         <button
           onClick={(e) => {
             e.stopPropagation()
-            setSlice((prev) => Math.min(TOTAL_SLICES - 1, prev + 1))
+            stepSlice(1)
           }}
           disabled={slice >= TOTAL_SLICES - 1}
           style={{
