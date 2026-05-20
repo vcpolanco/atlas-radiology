@@ -1483,7 +1483,7 @@ function layoutCallouts(items: CalloutItem[], viewH: number, minGapPx: number) {
   /* [3.30.3] LAYOUT :: root                               */
   /* ===================================================== */
   .appRoot {
-    height: 100vh;
+    height: 100dvh;
     display: flex;
     flex-direction: row;
     background: #000;
