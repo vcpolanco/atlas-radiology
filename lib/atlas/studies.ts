@@ -49,13 +49,16 @@ export const STUDIES: Study[] = [
   // END SECTION :: [S.1] STUDY :: Thorax CT Normal v1
   // Fin sección :: [S.1] Estudio TC Tórax normal v1
 
+
+
+  
   // =====================================================
   // [S.2] STUDY :: Abdomen CT Normal v1
   // Estudio :: TC Abdomen normal v1
   // =====================================================
   {
     id: "abdomen_ct_normal_v1",
-    title: "TC Abdomen normal (v1)",
+    title: "TC Abdomen y pelvis normal (v1)",
 
     basePath: "/studies/abdomen_ct_normal_v1",
     slicesCount: 105,
@@ -76,7 +79,6 @@ structures: ABDOMEN_CT_CORE_PROFILE.structures.map((s) => ({
 },
 // END SECTION :: STRUCTURES :: Abdomen (with side)
 // Fin sección :: Estructuras :: Abdomen (con lado)
-
 
 ]
 
