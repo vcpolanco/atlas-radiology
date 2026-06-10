@@ -255,10 +255,16 @@ const callouts: CalloutPlaced[] = useMemo(() => {
   const MIN_GAP_PX = 26
 
   const items: CalloutItem[] = annotations.map((a, idx) => {
+    
+      const anatomyStructures = Array.isArray(anatomyProfile)
+    ? anatomyProfile
+    : (anatomyProfile as { structures?: readonly any[] } | null)?.structures ?? null
+
     const label =
       labelById.get(a.structureId) ??
-      getStructureLabel(anatomyProfile?.structures ?? null, a.structureId) ??
+      getStructureLabel(anatomyStructures, a.structureId) ??
       a.structureId
+
 
     const px = g.i.left - g.v.left + a.x * g.i.width
     const py = g.i.top - g.v.top + a.y * g.i.height
