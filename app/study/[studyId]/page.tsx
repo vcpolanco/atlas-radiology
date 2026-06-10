@@ -257,7 +257,7 @@ const callouts: CalloutPlaced[] = useMemo(() => {
   const items: CalloutItem[] = annotations.map((a, idx) => {
     const label =
       labelById.get(a.structureId) ??
-      getStructureLabel(anatomyProfile, a.structureId) ??
+      getStructureLabel(anatomyProfile?.structures ?? null, a.structureId) ??
       a.structureId
 
     const px = g.i.left - g.v.left + a.x * g.i.width
