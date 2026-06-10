@@ -1564,18 +1564,15 @@ function layoutCallouts(items: CalloutItem[], viewH: number, minGapPx: number) {
   }
 
   .viewerImg {
-    width: 100%;
-    height: 100%;
+    max-width: 100%;
+    max-height: 100%;
+    width: auto;
+    height: auto;
     object-fit: contain;
     user-select: none;
     -webkit-user-drag: none;
   }
 
-  @media (max-width: 768px) {
-    .viewerImg {
-      transform: translateY(-18px);
-    }
-  }
 `}</style>
 
 
