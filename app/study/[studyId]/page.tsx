@@ -423,7 +423,10 @@ function getColorForStructureId(structureId: string) {
   }
   /* END [3.9.x] HELPER :: contained image rect */
 
-
+useEffect(() => {
+  setImageReady(false)
+  setGeom(null)
+}, [imageUrl])
 
   /* =====================================================
    [3.10] EFFECT :: callout geometry (viewer + image rects)
@@ -446,6 +449,8 @@ function getColorForStructureId(structureId: string) {
     if (ir.width <= 0 || ir.height <= 0) return
     if (cr.width <= 0 || cr.height <= 0) return
 
+    setImageReady(true)
+    
     setGeom({
       v: {
         left: vr.left,
@@ -1122,10 +1127,12 @@ function layoutCallouts(items: CalloutItem[], viewH: number, minGapPx: number) {
         </div>
 
         {/* [3.30.2.3] Viewer :: image */}
-        <img
+        
+ <img
+  key={imageUrl}
   ref={imgRef}
   src={imageUrl}
-  alt="CT"
+  alt={study?.title ?? "Imagen del estudio"}
   draggable={false}
   className="viewerImg"
   onLoad={() => {
@@ -1168,7 +1175,7 @@ function layoutCallouts(items: CalloutItem[], viewH: number, minGapPx: number) {
         {/* =====================================================
            [3.30.2.4] Viewer :: callouts
            ===================================================== */}
-        {imageReady && geom && callouts.length > 0 && (
+        {geom && callouts.length > 0 && (
           <>
             {/* [3.30.2.4.1] SVG lines */}
             <svg

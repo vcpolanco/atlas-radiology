@@ -3,6 +3,7 @@ import type { Study } from "./types"
 import { THORAX_CT_PUBLIC } from "@/lib/anatomy/profiles/thorax_ct_public"
 import { ABDOMEN_CT_CORE_PROFILE } from "@/lib/anatomy/profiles/abdomen_ct_core"
 import { BRAIN_MRI_CORE_PROFILE } from "@/lib/anatomy/profiles/brain_mri_core"
+import { RX_CHEST_CORE_PROFILE } from "@/lib/anatomy/profiles/rx_chest_core"
 
 export const STUDIES: Study[] = [
   {
@@ -34,7 +35,7 @@ export const STUDIES: Study[] = [
       category: s.category,
     })),
   },
-  {
+   {
     id: "brain_mri_normal_v1",
     title: "RM Cerebro normal - T2 axial (v1)",
     basePath: "/studies/brain_mri_normal_v1",
@@ -42,6 +43,20 @@ export const STUDIES: Study[] = [
     slicesExt: "jpg",
     sliceName: { prefix: "slice", pad: 3 },
     structures: BRAIN_MRI_CORE_PROFILE.structures.map((s) => ({
+      id: s.id,
+      label: s.labelEs ?? s.id,
+      side: s.side,
+      category: s.category,
+    })),
+  },
+  {
+    id: "rx_chest_normal_v1",
+    title: "RX Tórax normal - frente (v1)",
+    basePath: "/studies/rx_chest_normal_v1",
+    slicesCount: 1,
+    slicesExt: "jpg",
+    sliceName: { prefix: "slice", pad: 3 },
+    structures: RX_CHEST_CORE_PROFILE.structures.map((s) => ({
       id: s.id,
       label: s.labelEs ?? s.id,
       side: s.side,

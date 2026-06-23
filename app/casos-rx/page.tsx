@@ -11,6 +11,28 @@ export default function CasosRxPage() {
       <h1 style={{ fontSize: 26, margin: "8px 0 12px" }}>Casos de RX</h1>
 
       <div style={{ display: "grid", gap: 10, maxWidth: 780 }}>
+
+  <Link
+    href="/study/rx_chest_normal_v1"
+    style={{
+      textDecoration: "none",
+      border: "1px solid rgba(0,0,0,0.12)",
+      borderRadius: 14,
+      padding: 14,
+      color: "inherit",
+      display: "block",
+      background: "#f8fafc",
+    }}
+  >
+    <div style={{ fontWeight: 800 }}>
+      RX Tórax normal
+    </div>
+
+    <div style={{ opacity: 0.8, fontSize: 13 }}>
+      Referencia anatómica
+    </div>
+  </Link>
+
         {casos.map((c) => (
           <Link
             key={c.id}

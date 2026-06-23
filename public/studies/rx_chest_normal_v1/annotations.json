@@ -1,0 +1,74 @@
+{
+  "version": 1,
+  "studyId": "rx_chest_normal_v1",
+  "createdAt": "2026-06-23T04:00:55.753Z",
+  "annotationsBySlice": {
+    "0": [
+      {
+        "structureId": "right_main_bronchus",
+        "x": 0.4610555860442696,
+        "y": 0.37541443509308847
+      },
+      {
+        "structureId": "left_main_bronchus",
+        "x": 0.5289942329595907,
+        "y": 0.38085522400748106
+      },
+      {
+        "structureId": "carina",
+        "x": 0.49276028793808613,
+        "y": 0.3264473348635552
+      },
+      {
+        "structureId": "trachea",
+        "x": 0.49728953106577417,
+        "y": 0.19695655870101164
+      },
+      {
+        "structureId": "aortic_knob",
+        "x": 0.5434878109681924,
+        "y": 0.2763920768511434
+      },
+      {
+        "structureId": "right_hilum",
+        "x": 0.4221040951461522,
+        "y": 0.3950012751849018
+      },
+      {
+        "structureId": "left_hilum",
+        "x": 0.567945723857708,
+        "y": 0.37106180396157445
+      },
+      {
+        "structureId": "right_apex",
+        "x": 0.3931169391289486,
+        "y": 0.08922893819603843
+      },
+      {
+        "structureId": "left_apex",
+        "x": 0.6213907927644273,
+        "y": 0.06964209810422511
+      },
+      {
+        "structureId": "right_heart_border",
+        "x": 0.4184807006440018,
+        "y": 0.6169854628921193
+      },
+      {
+        "structureId": "left_heart_border",
+        "x": 0.6884235910542107,
+        "y": 0.6431012496812037
+      },
+      {
+        "structureId": "right_costophrenic_angle",
+        "x": 0.17299572312330835,
+        "y": 0.8280880727705517
+      },
+      {
+        "structureId": "left_costophrenic_angle",
+        "x": 0.809807306876251,
+        "y": 0.816118337158888
+      }
+    ]
+  }
+}
