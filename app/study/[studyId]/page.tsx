@@ -450,7 +450,7 @@ useEffect(() => {
     if (cr.width <= 0 || cr.height <= 0) return
 
     setImageReady(true)
-    
+
     setGeom({
       v: {
         left: vr.left,
@@ -1275,137 +1275,89 @@ function layoutCallouts(items: CalloutItem[], viewH: number, minGapPx: number) {
   onClick={(e) => e.stopPropagation()}
   style={{
     position: 'absolute',
-    top: 10,
-    right: 10,
+    top: isMobile ? 8 : 12,
+    right: isMobile ? 8 : 14,
     zIndex: 9999,
-    display: 'flex',
-    flexDirection: 'column',
-    gap: isMobile ? 4 : 8,
+    width: isMobile ? 118 : 168,
+    padding: isMobile ? 8 : 10,
+    borderRadius: 18,
+    background: 'rgba(12, 18, 28, 0.72)',
+    border: '1px solid rgba(255,255,255,0.16)',
+    boxShadow: '0 14px 36px rgba(0,0,0,0.35)',
+    backdropFilter: 'blur(12px)',
+    WebkitBackdropFilter: 'blur(12px)',
   }}
 >
-  <button
-    onClick={() => setLabelFilters((p) => ({ ...p, airway: !p.airway }))}
+  <div
     style={{
-      display: 'flex',
-      alignItems: 'center',
-      gap: isMobile ? 4 : 8,
-      minWidth: isMobile ? 65 : 130,
-      padding: isMobile ? '4px 6px' : '8px 12px',
-      borderRadius: isMobile ? 8 : 10,
-      border: '1px solid #d1d5db',
-      background: labelFilters.airway ? '#ffffff' : '#1f2933',
-      color: labelFilters.airway ? '#000000' : '#ffffff',
-      fontWeight: labelFilters.airway ? 700 : 400,
-      fontStyle: labelFilters.airway ? 'normal' : 'italic',
-      fontSize: isMobile ? 11 : 14,
-      cursor: 'pointer',
-      textAlign: 'left',
+      color: 'rgba(255,255,255,0.72)',
+      fontSize: isMobile ? 10 : 11,
+      fontWeight: 700,
+      letterSpacing: 0.5,
+      textTransform: 'uppercase',
+      marginBottom: isMobile ? 6 : 8,
+      paddingLeft: 4,
     }}
   >
-    <span
-      style={{
-        width: isMobile ? 6 : 10,
-        height: isMobile ? 6 : 10,
-        borderRadius: 999,
-        background: CATEGORY_COLORS.airway,
-        flex: '0 0 auto',
-      }}
-    />
-    Vía aérea
-  </button>
+    Categorías
+  </div>
 
-  <button
-    onClick={() => setLabelFilters((p) => ({ ...p, artery: !p.artery }))}
-    style={{
-      display: 'flex',
-      alignItems: 'center',
-      gap: isMobile ? 4 : 8,
-      minWidth: isMobile ? 65 : 130,
-      padding: isMobile ? '4px 6px' : '8px 12px',
-      borderRadius: isMobile ? 8 : 10,
-      border: '1px solid #d1d5db',
-      background: labelFilters.artery ? '#ffffff' : '#1f2933',
-      color: labelFilters.artery ? '#000000' : '#ffffff',
-      fontWeight: labelFilters.artery ? 700 : 400,
-      fontStyle: labelFilters.artery ? 'normal' : 'italic',
-      fontSize: isMobile ? 11 : 14,
-      cursor: 'pointer',
-      textAlign: 'left',
-    }}
-  >
-    <span
-      style={{
-        width: isMobile ? 6 : 10,
-        height: isMobile ? 6 : 10,
-        borderRadius: 999,
-        background: CATEGORY_COLORS.artery,
-        flex: '0 0 auto',
-      }}
-    />
-    Arterias
-  </button>
+  {[
+    { key: 'airway', label: 'Vía aérea' },
+    { key: 'artery', label: 'Arterias' },
+    { key: 'vein', label: 'Venas' },
+    { key: 'organ', label: 'Órganos' },
+  ].map((item) => {
+    const key = item.key as keyof typeof labelFilters
+    const active = labelFilters[key]
 
-  <button
-    onClick={() => setLabelFilters((p) => ({ ...p, vein: !p.vein }))}
-    style={{
-      display: 'flex',
-      alignItems: 'center',
-      gap: isMobile ? 4 : 8,
-      minWidth: isMobile ? 65 : 130,
-      padding: isMobile ? '4px 6px' : '8px 12px',
-      borderRadius: isMobile ? 8 : 10,
-      border: '1px solid #d1d5db',
-      background: labelFilters.vein ? '#ffffff' : '#1f2933',
-      color: labelFilters.vein ? '#000000' : '#ffffff',
-      fontWeight: labelFilters.vein ? 700 : 400,
-      fontStyle: labelFilters.vein ? 'normal' : 'italic',
-      fontSize: isMobile ? 11 : 14,
-      cursor: 'pointer',
-      textAlign: 'left',
-    }}
-  >
-    <span
-      style={{
-        width: isMobile ? 6 : 10,
-        height: isMobile ? 6 : 10,
-        borderRadius: 999,
-        background: CATEGORY_COLORS.vein,
-        flex: '0 0 auto',
-      }}
-    />
-    Venas
-  </button>
+    return (
+      <button
+        key={item.key}
+        onClick={() =>
+          setLabelFilters((p) => ({
+            ...p,
+            [key]: !p[key],
+          }))
+        }
+        style={{
+          width: '100%',
+          display: 'flex',
+          alignItems: 'center',
+          gap: isMobile ? 6 : 8,
+          padding: isMobile ? '6px 7px' : '8px 9px',
+          marginTop: isMobile ? 3 : 4,
+          borderRadius: 12,
+          border: active
+            ? '1px solid rgba(255,255,255,0.18)'
+            : '1px solid rgba(255,255,255,0.06)',
+          background: active
+            ? 'rgba(255,255,255,0.12)'
+            : 'rgba(255,255,255,0.035)',
+          color: active ? '#ffffff' : 'rgba(255,255,255,0.42)',
+          fontWeight: active ? 750 : 500,
+          fontSize: isMobile ? 11 : 13,
+          cursor: 'pointer',
+          textAlign: 'left',
+          transition: 'background 120ms ease, color 120ms ease, border-color 120ms ease',
+        }}
+      >
+        <span
+          style={{
+            width: isMobile ? 7 : 9,
+            height: isMobile ? 7 : 9,
+            borderRadius: 999,
+            background: CATEGORY_COLORS[key],
+            opacity: active ? 1 : 0.35,
+            flex: '0 0 auto',
+            boxShadow: active ? `0 0 10px ${CATEGORY_COLORS[key]}` : 'none',
+          }}
+        />
 
-  <button
-    onClick={() => setLabelFilters((p) => ({ ...p, organ: !p.organ }))}
-    style={{
-      display: 'flex',
-      alignItems: 'center',
-      gap: isMobile ? 4 : 8,
-      minWidth: isMobile ? 65 : 130,
-      padding: isMobile ? '4px 6px' : '8px 12px',
-      borderRadius: isMobile ? 8 : 10,
-      border: '1px solid #d1d5db',
-      background: labelFilters.organ ? '#ffffff' : '#1f2933',
-      color: labelFilters.organ ? '#000000' : '#ffffff',
-      fontWeight: labelFilters.organ ? 700 : 400,
-      fontStyle: labelFilters.organ ? 'normal' : 'italic',
-      fontSize: isMobile ? 11 : 14,
-      cursor: 'pointer',
-      textAlign: 'left',
-    }}
-  >
-    <span
-      style={{
-        width: isMobile ? 6 : 10,
-        height: isMobile ? 6 : 10,
-        borderRadius: 999,
-        background: CATEGORY_COLORS.organ,
-        flex: '0 0 auto',
-      }}
-    />
-    Órganos
-  </button>
+        <span>{item.label}</span>
+      </button>
+    )
+  })}
 </div>
 {/* END [3.30.2.5] Viewer :: label filters */}
 
@@ -1564,27 +1516,28 @@ function layoutCallouts(items: CalloutItem[], viewH: number, minGapPx: number) {
   /* [3.30.3] VIEWER                                       */
   /* ===================================================== */
   .viewer {
-    flex: 1;
-    min-width: 0;
-    min-height: 0;
-    position: relative;
-    overflow: hidden;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: #000;
-    touch-action: none;
-  }
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #000;
+  touch-action: none;
+
+  padding-top: 24px;
+  padding-bottom: 24px;
+}
 
   .viewerImg {
-    max-width: 100%;
-    max-height: 100%;
-    width: auto;
-    height: auto;
-    object-fit: contain;
-    user-select: none;
-    -webkit-user-drag: none;
-  }
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  user-select: none;
+  -webkit-user-drag: none;
+}
 
 `}</style>
 
