@@ -155,16 +155,26 @@ useEffect(() => {
      ===================================================== */
   const [slice, setSlice] = useState(0)
 const [labelFilters, setLabelFilters] = useState({
-  airway: true,
-  artery: true,
-  vein: true, 
-  organ: true,
+   airway: studyId !== "rx_chest_normal_v1",
+  artery: studyId !== "rx_chest_normal_v1",
+  vein: studyId !== "rx_chest_normal_v1",
+  organ: studyId !== "rx_chest_normal_v1",
 })
 
   const [isMobile, setIsMobile] = useState(false)
   const [mounted, setMounted] = useState(false)
   /* END [3.3] STATE :: CORE UI */
 
+  useEffect(() => {
+  const labelsOnByDefault = studyId !== "rx_chest_normal_v1"
+
+  setLabelFilters({
+    airway: labelsOnByDefault,
+    artery: labelsOnByDefault,
+    vein: labelsOnByDefault,
+    organ: labelsOnByDefault,
+  })
+}, [studyId])
 
   /* =====================================================
      [3.4] STATE :: ANNOTATIONS / AUTHOR
@@ -773,19 +783,23 @@ function onTouchMove(e: React.TouchEvent<HTMLDivElement>) {
   }
 
   // Paso por umbral: cada 24px cambia 1 slice
-  const STEP_PX = 24
-  const dyStep = t.clientY - lastY
+const STEP_PX = 14
+const dyStep = t.clientY - lastY
 
   if (Math.abs(dyStep) >= STEP_PX) {
     // dyStep > 0 => dedo baja => slice anterior (avanzar)
     // dyStep < 0 => dedo sube => slice siguiente (retroceder)
-    stepSlice(dyStep > 0 ? +1 : -1)
+  const steps = Math.floor(Math.abs(dyStep) / STEP_PX)
+  const direction = dyStep > 0 ? +1 : -1
 
-    // Recalibrar el "last step" para permitir múltiples pasos en un solo swipe
-    touchLastStepYRef.current = t.clientY
-    // Evitar scroll del navegador mientras swippeás dentro del viewer
-    e.preventDefault()
-  }
+    stepSlice(direction * steps)
+
+  touchLastStepYRef.current =
+    lastY + direction * steps * STEP_PX
+
+  e.preventDefault()
+}
+
 }
 
 function onTouchEnd() {

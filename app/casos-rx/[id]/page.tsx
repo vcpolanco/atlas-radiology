@@ -129,6 +129,7 @@ export default function CasoRxDetailPage({
 
   const [showOverlay, setShowOverlay] = useState(false)
   const [points, setPoints] = useState<Point[]>(caso?.overlay.points as Point[] ?? [])
+  const [draggingIndex, setDraggingIndex] = useState<number | null>(null)
 
   const polygonPoints = useMemo(
     () => points.map(([x, y]) => `${x},${y}`).join(" "),
@@ -164,6 +165,34 @@ export default function CasoRxDetailPage({
     setShowOverlay(true)
   }
 
+  function movePoint(
+  e: React.MouseEvent<HTMLDivElement>
+) {
+  if (draggingIndex === null) return
+
+  const el = imageWrapRef.current
+  if (!el) return
+
+  const rect = el.getBoundingClientRect()
+
+  const x = ((e.clientX - rect.left) / rect.width) * 100
+  const y = ((e.clientY - rect.top) / rect.height) * 100
+
+  setPoints((prev) =>
+    prev.map((p, i) =>
+      i === draggingIndex
+        ? [
+            Number(Math.max(0, Math.min(100, x)).toFixed(1)),
+            Number(Math.max(0, Math.min(100, y)).toFixed(1)),
+          ]
+        : p
+    )
+  )
+}
+
+function stopDragging() {
+  setDraggingIndex(null)
+}
   const exportText = `points: ${JSON.stringify(points, null, 2)}`
 
   return (
@@ -190,10 +219,13 @@ export default function CasoRxDetailPage({
         <section className="imageColumn">
           <div className="imageCard">
             <div
-              ref={imageWrapRef}
-              onClick={addPolygonPoint}
-              className={isAuthor ? "imageWrap author" : "imageWrap"}
-            >
+  ref={imageWrapRef}
+  onClick={addPolygonPoint}
+  onMouseMove={movePoint}
+  onMouseUp={stopDragging}
+  onMouseLeave={stopDragging}
+  className={isAuthor ? "imageWrap author" : "imageWrap"}
+>
               <img src={caso.image} alt={caso.title} />
 
               {(showOverlay || isAuthor) && points.length >= 2 && (
@@ -206,18 +238,22 @@ export default function CasoRxDetailPage({
                     points={polygonPoints}
                     fill="rgba(236, 72, 153, 0.28)"
                     stroke="rgba(236, 72, 153, 0.95)"
-                    strokeWidth="0.8"
+                    strokeWidth="0.4"
                   />
                 </svg>
               )}
 
               {isAuthor &&
                 points.map(([x, y], idx) => (
-                  <div
-                    key={`${x}-${y}-${idx}`}
-                    className="authorPoint"
-                    style={{ left: `${x}%`, top: `${y}%` }}
-                  >
+                 <div
+                      key={`${x}-${y}-${idx}`}
+                      className="authorPoint"
+                      style={{ left: `${x}%`, top: `${y}%` }}
+                      onMouseDown={(e) => {
+                        e.stopPropagation()
+                        setDraggingIndex(idx)
+                      }}
+                    >
                     {idx + 1}
                   </div>
                 ))}
@@ -374,22 +410,24 @@ export default function CasoRxDetailPage({
         }
 
         .authorPoint {
-          position: absolute;
-          transform: translate(-50%, -50%);
-          width: 22px;
-          height: 22px;
-          border-radius: 999px;
-          background: #ec4899;
-          color: white;
-          border: 2px solid white;
-          font-size: 11px;
-          font-weight: 900;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
-          pointer-events: none;
-        }
+  position: absolute;
+  transform: translate(-50%, -50%);
+  width: 22px;
+  height: 22px;
+  border-radius: 999px;
+  background: #ec4899;
+  color: white;
+  border: 2px solid white;
+  font-size: 11px;
+  font-weight: 900;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
+
+  cursor: grab;
+  pointer-events: auto;
+}
 
         .actions {
           display: flex;

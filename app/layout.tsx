@@ -2,8 +2,8 @@ import type { Metadata } from "next"
 import Link from "next/link"
 
 export const metadata: Metadata = {
-  title: "Proyectos Web",
-  description: "Atlas y casos de RX",
+  title: "ATLAS RADIOLOGY",
+  description: "Atlas y casos de Radiologia",
 }
 
 function NavLink({ href, label }: { href: string; label: string }) {
