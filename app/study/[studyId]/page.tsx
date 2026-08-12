@@ -209,6 +209,7 @@ const touchIsSwipingRef = useRef(false)
 const mouseIsDraggingRef = useRef(false)
 const mouseLastStepYRef = useRef<number | null>(null)
 const mouseDidDragRef = useRef(false)
+const touchStartSliceRef = useRef<number | null>(null)
 
 
 
@@ -753,6 +754,7 @@ function onTouchStart(e: React.TouchEvent<HTMLDivElement>) {
   touchStartYRef.current = t.clientY
   touchStartXRef.current = t.clientX
   touchLastStepYRef.current = t.clientY
+  touchStartSliceRef.current = slice
   touchIsSwipingRef.current = false
 }
 
@@ -762,51 +764,52 @@ function onTouchMove(e: React.TouchEvent<HTMLDivElement>) {
   if (TOTAL_SLICES <= 0) return
 
   const t = e.touches[0]
+
   const startY = touchStartYRef.current
   const startX = touchStartXRef.current
-  const lastY = touchLastStepYRef.current
+  const startSlice = touchStartSliceRef.current
 
-  if (startY == null || startX == null || lastY == null) return
+  if (startY == null || startX == null || startSlice == null) return
 
-  const dyTotal = t.clientY - startY
-  const dxTotal = t.clientX - startX
+  const dy = t.clientY - startY
+  const dx = t.clientX - startX
 
-  // Si el gesto es más horizontal que vertical, no lo tomamos como swipe de slices
-  if (Math.abs(dxTotal) > Math.abs(dyTotal) && Math.abs(dxTotal) > 10) {
+  // Si el gesto es principalmente horizontal, ignorarlo.
+  if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > 10) {
     return
   }
 
-  // Umbral para considerar "swipe" y no "tap"
-  const SWIPE_START_PX = 10
-  if (!touchIsSwipingRef.current && Math.abs(dyTotal) > SWIPE_START_PX) {
+  const SWIPE_START_PX = 8
+
+  if (!touchIsSwipingRef.current && Math.abs(dy) > SWIPE_START_PX) {
     touchIsSwipingRef.current = true
   }
 
-  // Paso por umbral: cada 24px cambia 1 slice
-const STEP_PX = 14
-const dyStep = t.clientY - lastY
+  if (!touchIsSwipingRef.current) return
 
-  if (Math.abs(dyStep) >= STEP_PX) {
-    // dyStep > 0 => dedo baja => slice anterior (avanzar)
-    // dyStep < 0 => dedo sube => slice siguiente (retroceder)
-  const steps = Math.floor(Math.abs(dyStep) / STEP_PX)
-  const direction = dyStep > 0 ? +1 : -1
+  // Menor número = más rápido recorre los slices.
+  const PX_PER_SLICE = 8
 
-    stepSlice(direction * steps)
+  const steps = Math.trunc(dy / PX_PER_SLICE)
 
-  touchLastStepYRef.current =
-    lastY + direction * steps * STEP_PX
+  const nextSlice = clampSlice(startSlice + steps)
+
+  setSlice(nextSlice)
 
   e.preventDefault()
 }
+
+  
 
 }
 
 function onTouchEnd() {
   if (!isMobile) return
+
   touchStartYRef.current = null
   touchStartXRef.current = null
   touchLastStepYRef.current = null
+  touchStartSliceRef.current = null
   // dejá touchIsSwipingRef.current como está; lo usamos para bloquear tap en author
 }
 
