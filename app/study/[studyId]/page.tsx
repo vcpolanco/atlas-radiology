@@ -1189,7 +1189,7 @@ function layoutCallouts(items: CalloutItem[], viewH: number, minGapPx: number) {
         {/* =====================================================
            [3.30.2.4] Viewer :: callouts
            ===================================================== */}
-        {geom && callouts.length > 0 && (
+        {!isMobile && geom && callouts.length > 0 && (
           <>
             {/* [3.30.2.4.1] SVG lines */}
             <svg
