@@ -200,17 +200,16 @@ const [labelFilters, setLabelFilters] = useState({
   
   const preloadedRef = useRef<Set<string>>(new Set())
 
-const touchStartYRef = useRef<number | null>(null)
-const touchStartXRef = useRef<number | null>(null)
+// Mobile touch / pointer scrub
 const touchLastStepYRef = useRef<number | null>(null)
 const touchIsSwipingRef = useRef(false)
+const activeTouchPointerRef = useRef<number | null>(null)
+
 
 // funcion para mantener click izq mantenido y cambiar slices //
 const mouseIsDraggingRef = useRef(false)
 const mouseLastStepYRef = useRef<number | null>(null)
 const mouseDidDragRef = useRef(false)
-const touchStartSliceRef = useRef<number | null>(null)
-
 
 
   /* END [3.5] REFS :: DOM + TOUCH + PRELOAD */
@@ -509,7 +508,7 @@ useEffect(() => {
     if (!study) return
     if (TOTAL_SLICES <= 0) return
 
-    const RANGE = 4
+    const RANGE = 15
     const urls: string[] = []
 
     for (let i = slice - RANGE; i <= slice + RANGE; i++) {
@@ -721,13 +720,11 @@ useEffect(() => {
 }
   /* END [3.18] HANDLER :: wheel slice navigation */
 
+/* =====================================================
+   [3.19] HANDLERS :: mobile pointer drag slice navigation
+   ===================================================== */
 
-
-  /* =====================================================
-     [3.19] funcion para hacer swipe en el celu y avanzar
-     ===================================================== */
-
-     function clampSlice(next: number) {
+function clampSlice(next: number) {
   return Math.min(TOTAL_SLICES - 1, Math.max(0, next))
 }
 
@@ -738,80 +735,85 @@ function stepSlice(delta: number) {
     const next = clampSlice(prev + delta)
     return next === prev ? prev : next
   })
-
-  window.requestAnimationFrame(() => {
-    window.requestAnimationFrame(() => {
-      window.dispatchEvent(new Event('resize'))
-    })
-  })
 }
 
-function onTouchStart(e: React.TouchEvent<HTMLDivElement>) {
+function onPointerDown(e: React.PointerEvent<HTMLDivElement>) {
   if (!isMobile) return
-  if (e.touches.length !== 1) return
-
-  const t = e.touches[0]
-  touchStartYRef.current = t.clientY
-  touchStartXRef.current = t.clientX
-  touchLastStepYRef.current = t.clientY
-  touchStartSliceRef.current = slice
-  touchIsSwipingRef.current = false
-}
-
-function onTouchMove(e: React.TouchEvent<HTMLDivElement>) {
-  if (!isMobile) return
-  if (e.touches.length !== 1) return
+  if (e.pointerType !== "touch") return
   if (TOTAL_SLICES <= 0) return
 
-  const t = e.touches[0]
+  activeTouchPointerRef.current = e.pointerId
+  touchLastStepYRef.current = e.clientY
+  touchIsSwipingRef.current = false
 
-  const startY = touchStartYRef.current
-  const startX = touchStartXRef.current
-  const startSlice = touchStartSliceRef.current
+  /*
+    CLAVE:
+    el viewer conserva el gesto aunque cambie
+    la imagen mientras desplazamos slices.
+  */
+  e.currentTarget.setPointerCapture(e.pointerId)
+}
 
-  if (startY == null || startX == null || startSlice == null) return
+function onPointerMove(e: React.PointerEvent<HTMLDivElement>) {
+  if (!isMobile) return
+  if (e.pointerType !== "touch") return
 
-  const dy = t.clientY - startY
-  const dx = t.clientX - startX
+  if (activeTouchPointerRef.current !== e.pointerId) return
 
-  // Si el gesto es principalmente horizontal, ignorarlo.
-  if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > 10) {
-    return
-  }
+  const lastY = touchLastStepYRef.current
+  if (lastY == null) return
 
-  const SWIPE_START_PX = 8
+  const dy = e.clientY - lastY
 
-  if (!touchIsSwipingRef.current && Math.abs(dy) > SWIPE_START_PX) {
-    touchIsSwipingRef.current = true
-  }
+  /*
+    Sensibilidad mobile.
+    Cada 5 px recorridos = 1 slice.
+  */
+  const STEP_PX = 5
 
-  if (!touchIsSwipingRef.current) return
+  if (Math.abs(dy) < STEP_PX) return
 
-  // Menor número = más rápido recorre los slices.
-  const PX_PER_SLICE = 8
+  const direction = dy > 0 ? +1 : -1
+  const steps = Math.floor(Math.abs(dy) / STEP_PX)
 
-  const steps = Math.trunc(dy / PX_PER_SLICE)
+  /*
+    Actualizamos todos los pasos acumulados,
+    pero manteniendo la referencia precisa.
+  */
+  stepSlice(direction * steps)
 
-  const nextSlice = clampSlice(startSlice + steps)
+  touchLastStepYRef.current =
+    lastY + direction * steps * STEP_PX
 
-  setSlice(nextSlice)
+  touchIsSwipingRef.current = true
 
   e.preventDefault()
 }
 
-  
-
-}
-
-function onTouchEnd() {
+function onPointerUp(e: React.PointerEvent<HTMLDivElement>) {
   if (!isMobile) return
+  if (e.pointerType !== "touch") return
+  if (activeTouchPointerRef.current !== e.pointerId) return
 
-  touchStartYRef.current = null
-  touchStartXRef.current = null
+  /*
+    STOP inmediato cuando levantás el dedo.
+  */
+  activeTouchPointerRef.current = null
   touchLastStepYRef.current = null
-  touchStartSliceRef.current = null
-  // dejá touchIsSwipingRef.current como está; lo usamos para bloquear tap en author
+
+  if (e.currentTarget.hasPointerCapture(e.pointerId)) {
+    e.currentTarget.releasePointerCapture(e.pointerId)
+  }
 }
+
+function onPointerCancel(e: React.PointerEvent<HTMLDivElement>) {
+  if (activeTouchPointerRef.current !== e.pointerId) return
+
+  activeTouchPointerRef.current = null
+  touchLastStepYRef.current = null
+}
+
+/* END [3.19] HANDLERS :: mobile pointer drag slice navigation */
 
 /* =====================================================
    [3.19.x] HANDLERS :: desktop vertical mouse drag slice navigation
@@ -1113,9 +1115,10 @@ function layoutCallouts(items: CalloutItem[], viewH: number, minGapPx: number) {
   ref={viewerRef}
   onWheel={onWheel}
   onClick={isAuthor ? addPointAtClick : undefined}
-  onTouchStart={onTouchStart}
-  onTouchMove={onTouchMove}
-  onTouchEnd={onTouchEnd}
+  onPointerDown={onPointerDown}
+onPointerMove={onPointerMove}
+onPointerUp={onPointerUp}
+onPointerCancel={onPointerCancel}
   onMouseDown={onMouseDown}
   onMouseMove={onMouseMove}
   onMouseUp={onMouseUp}
