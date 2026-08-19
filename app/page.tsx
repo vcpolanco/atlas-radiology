@@ -47,11 +47,7 @@ export default function HomePage() {
           title="Atlas"
           desc="Visor principal tipo atlas (cortes, etiquetas, navegación)."
         />
-        <CardLink
-          href="/casos-rx"
-          title="Casos de RX"
-          desc="Biblioteca de casos de radiografía con listado y detalle."
-        />
+        
       </div>
     </main>
   )

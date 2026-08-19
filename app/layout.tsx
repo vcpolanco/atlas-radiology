@@ -72,7 +72,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             <nav style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
               <NavLink href="/" label="Inicio" />
               <NavLink href="/atlas" label="Atlas" />
-              <NavLink href="/casos-rx" label="Casos RX" />
+              
             </nav>
           </div>
         </header>

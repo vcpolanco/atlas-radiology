@@ -12,6 +12,7 @@ import { STUDIES } from "@/lib/atlas/studies"
 // Propósito (ES): mostrar estudios como cards clickeables (sin botón "Abrir")
 // =====================================================
 export default function AtlasPage() {
+  console.log("ATLAS PAGE CARGADA", STUDIES.map((s) => s.id))
   return (
     <div style={{ display: "grid", gap: 12 }}>
       {/* ----------------------------------------------------- */}
@@ -32,7 +33,9 @@ export default function AtlasPage() {
       {/* Sección :: Cards de estudios (CardLink)               */}
       {/* ----------------------------------------------------- */}
       <div style={{ display: "grid", gap: 12 }}>
-        {STUDIES.map((s) => (
+        {STUDIES
+           .filter((s) => !s.id.toLowerCase().includes("rx"))
+           .map((s) => (
           <Link
             key={s.id}
             href={`/study/${s.id}`}

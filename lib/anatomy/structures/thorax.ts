@@ -235,6 +235,38 @@ export const THORAX_STRUCTURES: Record<string, ThoraxStructure> = {
     side: "L",
   },
 
+  pulmonary_vein_r_sup: {
+  id: "pulmonary_vein_r_sup",
+  label: "Right superior pulmonary vein",
+  labelEs: "Vena pulmonar superior derecha",
+  category: "vein",
+  side: "R",
+},
+
+pulmonary_vein_r_inf: {
+  id: "pulmonary_vein_r_inf",
+  label: "Right inferior pulmonary vein",
+  labelEs: "Vena pulmonar inferior derecha",
+  category: "vein",
+  side: "R",
+},
+
+pulmonary_vein_l_sup: {
+  id: "pulmonary_vein_l_sup",
+  label: "Left superior pulmonary vein",
+  labelEs: "Vena pulmonar superior izquierda",
+  category: "vein",
+  side: "L",
+},
+
+pulmonary_vein_l_inf: {
+  id: "pulmonary_vein_l_inf",
+  label: "Left inferior pulmonary vein",
+  labelEs: "Vena pulmonar inferior izquierda",
+  category: "vein",
+  side: "L",
+},
+
   // =====================================================
   // ORGANS / OTHERS
   // =====================================================
@@ -318,6 +350,39 @@ export const THORAX_STRUCTURES: Record<string, ThoraxStructure> = {
     category: "organ",
     side: "L",
   },
+
+  right_atrium: {
+  id: "right_atrium",
+  label: "Right atrium",
+  labelEs: "Aurícula derecha",
+  category: "organ",
+  side: "R",
+},
+
+left_atrium: {
+  id: "left_atrium",
+  label: "Left atrium",
+  labelEs: "Aurícula izquierda",
+  category: "organ",
+  side: "L",
+},
+
+right_ventricle: {
+  id: "right_ventricle",
+  label: "Right ventricle",
+  labelEs: "Ventrículo derecho",
+  category: "organ",
+  side: "R",
+},
+
+left_ventricle: {
+  id: "left_ventricle",
+  label: "Left ventricle",
+  labelEs: "Ventrículo izquierdo",
+  category: "organ",
+  side: "L",
+},
+
 } as const
 
 // END SECTION :: [A.2] ANATOMY :: thorax structures

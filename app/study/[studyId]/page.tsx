@@ -837,12 +837,17 @@ function onMouseMove(e: React.MouseEvent<HTMLDivElement>) {
   if (lastY == null) return
 
   const dy = e.clientY - lastY
-  const STEP_PX = 18
+  const STEP_PX = 10
 
   if (Math.abs(dy) >= STEP_PX) {
-    stepSlice(dy > 0 ? +1 : -1)
+    const direction = dy > 0 ? +1 : -1
+    const steps = Math.floor(Math.abs(dy) / STEP_PX)
 
-    mouseLastStepYRef.current = e.clientY
+    stepSlice(direction * steps)
+
+    mouseLastStepYRef.current =
+      lastY + direction * steps * STEP_PX
+
     mouseDidDragRef.current = true
   }
 }

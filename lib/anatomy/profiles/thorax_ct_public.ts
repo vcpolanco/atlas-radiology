@@ -35,9 +35,17 @@ export const THORAX_CT_PUBLIC = [
   THORAX_STRUCTURES.azygos,
   THORAX_STRUCTURES.brachiocephalic_vein_r,
   THORAX_STRUCTURES.brachiocephalic_vein_l,
+  THORAX_STRUCTURES.pulmonary_vein_r_sup,
+THORAX_STRUCTURES.pulmonary_vein_r_inf,
+THORAX_STRUCTURES.pulmonary_vein_l_sup,
+THORAX_STRUCTURES.pulmonary_vein_l_inf,
 
   // ORGANS / OTHERS
   THORAX_STRUCTURES.heart,
+  THORAX_STRUCTURES.right_atrium,
+THORAX_STRUCTURES.left_atrium,
+THORAX_STRUCTURES.right_ventricle,
+THORAX_STRUCTURES.left_ventricle,
   THORAX_STRUCTURES.right_lung,
   THORAX_STRUCTURES.left_lung,
   THORAX_STRUCTURES.diaphragm_r,
