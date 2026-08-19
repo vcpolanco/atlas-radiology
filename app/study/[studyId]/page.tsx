@@ -508,7 +508,7 @@ useEffect(() => {
     if (!study) return
     if (TOTAL_SLICES <= 0) return
 
-    const RANGE = 15
+    const RANGE = 25
     const urls: string[] = []
 
     for (let i = slice - RANGE; i <= slice + RANGE; i++) {
@@ -1154,7 +1154,6 @@ onPointerCancel={onPointerCancel}
         {/* [3.30.2.3] Viewer :: image */}
         
  <img
-  key={imageUrl}
   ref={imgRef}
   src={imageUrl}
   alt={study?.title ?? "Imagen del estudio"}
